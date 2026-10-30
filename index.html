@@ -19,6 +19,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Фокус ЕГЭ">
+<meta name="application-name" content="Фокус ЕГЭ">
 <style>
 :root{
   --bg:#f4f6fb;
@@ -1947,6 +1954,131 @@ details.mistake-details p{font-size:10.5px;color:var(--ink-2);line-height:1.6;ma
 [data-theme="dark"] .pse-task-hero.red{background:linear-gradient(135deg,#2a1518,#191d2e);border-color:#4a2024}
 [data-theme="dark"] .pse-summary span{background:var(--surface-2);border-color:var(--line)}
 [data-theme="dark"] .dep-node.weak{background:#2a1518;border-color:#4a2024}
+</style>
+<style>
+/* === Focus 3.0: поиск, фильтры, SM-2, ФИПИ-сессии, синхронизация, PWA === */
+.search-trigger{display:flex;align-items:center;gap:7px;height:34px;padding:0 11px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--muted);font:inherit;font-size:10px;font-weight:650;cursor:pointer;transition:.15s}
+.search-trigger:hover{border-color:#cfcaff;color:var(--brand);background:var(--brand-soft)}
+.search-trigger kbd{font:inherit;font-size:8px;font-weight:800;padding:2px 5px;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;color:var(--muted-2);background:var(--surface-2)}
+.search-modal{width:min(780px,calc(100vw - 28px));max-height:min(84vh,760px);display:flex;flex-direction:column;overflow:hidden}
+.search-modal .modal-body{overflow:auto;padding:0 20px 20px}
+.search-box{display:flex;align-items:center;gap:10px;margin:0 20px 12px;padding:11px 13px;border:1.5px solid var(--line);border-radius:13px;background:var(--surface-2)}
+.search-box:focus-within{border-color:var(--brand);box-shadow:0 0 0 3px rgba(81,70,229,.08);background:var(--surface)}
+.search-box svg{width:17px;height:17px;color:var(--muted);flex:none}
+.search-box input{flex:1;min-width:0;border:0;outline:0;background:transparent;font:inherit;font-size:13px;color:var(--ink)}
+.search-box input::placeholder{color:var(--muted-2)}
+.search-clear{border:0;background:transparent;color:var(--muted);cursor:pointer;display:grid;place-items:center;padding:2px;border-radius:6px}
+.search-clear:hover{color:var(--ink);background:var(--line-2)}
+.search-filters{display:flex;gap:6px;flex-wrap:wrap;padding:0 20px 12px}
+.search-filter{padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--muted);font:inherit;font-size:9.5px;font-weight:700;cursor:pointer;transition:.12s}
+.search-filter.active{border-color:var(--brand);background:var(--brand-soft);color:var(--brand)}
+.search-results{display:flex;flex-direction:column;gap:7px}
+.search-result{display:flex;align-items:flex-start;gap:10px;width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:11px;background:var(--surface);text-align:left;cursor:pointer;transition:.12s;font:inherit}
+.search-result:hover{border-color:#cfcaff;background:linear-gradient(135deg,#faf9ff,#f6f4ff);transform:translateY(-1px)}
+.search-result-ico{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;flex:none;background:var(--brand-soft);color:var(--brand);font-size:11px;font-weight:800}
+.search-result-ico.q{background:var(--mint-soft,#e7f8f0);color:#0f9f6e}
+.search-result-ico.c{background:#fff4e5;color:#c56a00}
+.search-result-main{min-width:0;flex:1}
+.search-result-main b{display:block;font-size:11px;line-height:1.35;color:var(--ink)}
+.search-result-main small{display:block;font-size:9px;line-height:1.45;color:var(--muted);margin-top:3px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.search-result-meta{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:4px;font-size:8px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.05em}
+.search-result-meta span{padding:3px 6px;border-radius:5px;background:var(--surface-2);border:1px solid var(--line-2)}
+.search-mark{background:#fff0b3;color:inherit;border-radius:3px;padding:0 1px}
+.search-empty{padding:36px 20px;text-align:center;color:var(--muted);font-size:11px}
+.search-hint{padding:10px 2px 2px;font-size:8.5px;color:var(--muted-2);text-align:center}
+.topic-filters{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:14px 0 4px}
+.topic-filter{padding:6px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--muted);font:inherit;font-size:9px;font-weight:700;cursor:pointer;transition:.12s}
+.topic-filter:hover{border-color:#cfcaff;color:var(--brand)}
+.topic-filter.active{border-color:var(--brand);background:var(--brand-soft);color:var(--brand)}
+.topic-filter b{font-weight:800;opacity:.75;margin-left:3px}
+.topic-due{display:inline-flex;align-items:center;gap:3px;padding:2px 6px;border-radius:5px;background:#fff4e5;border:1px solid #ffe0b8;color:#a15c00;font-size:8px;font-weight:800;white-space:nowrap}
+.topic-due.overdue{background:#ffefed;border-color:#ffd3cf;color:#b42318}
+.review-card{margin-top:16px;border:1px solid #dcd7ff;border-radius:18px;padding:18px;background:linear-gradient(125deg,#f7f5ff,#fff 62%,#f2fff9);position:relative;overflow:hidden}
+.review-card:after{content:"";position:absolute;right:-36px;top:-52px;width:170px;height:170px;border-radius:50%;border:1px solid rgba(81,70,229,.1)}
+.review-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;position:relative;z-index:1}
+.review-head b{display:block;font-size:13px;letter-spacing:-.02em}
+.review-head small{display:block;font-size:9px;color:var(--muted);line-height:1.45;margin-top:3px}
+.review-list{display:flex;flex-direction:column;gap:6px;margin-top:12px;position:relative;z-index:1}
+.review-row{display:flex;align-items:center;gap:8px;padding:8px 9px;border:1px solid var(--line);border-radius:9px;background:rgba(255,255,255,.7);font-size:9.5px}
+.review-row b{flex:1;min-width:0;font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.review-row small{color:var(--muted);font-size:8px;white-space:nowrap}
+.review-row button{border:0;background:var(--brand-soft);color:var(--brand);border-radius:6px;padding:4px 7px;font:inherit;font-size:8.5px;font-weight:800;cursor:pointer}
+.sync-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.sync-field{display:flex;flex-direction:column;gap:5px}
+.sync-field label{font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--muted-2)}
+.sync-field input{height:36px;border:1px solid var(--line);border-radius:9px;background:var(--surface);padding:0 10px;font:inherit;font-size:10.5px;color:var(--ink);outline:0}
+.sync-field input:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(81,70,229,.07)}
+.sync-status{display:flex;align-items:flex-start;gap:8px;margin-top:10px;padding:9px 10px;border:1px solid var(--line);border-radius:9px;background:var(--surface-2);font-size:9px;line-height:1.45;color:var(--muted)}
+.sync-status b{color:var(--ink)}
+.sync-status.ok{border-color:#bcebd6;background:#effbf5;color:#087a55}
+.sync-status.warn{border-color:#ffe0b8;background:#fffbf3;color:#9a5b00}
+.sync-status.err{border-color:#ffd3cf;background:#fff6f4;color:#b42318}
+.sync-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.sync-note{margin-top:8px;font-size:8.5px;line-height:1.5;color:var(--muted-2)}
+.pwa-banner{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1px solid #dcd7ff;border-radius:15px;background:linear-gradient(125deg,#f7f5ff,#fff);margin-top:16px}
+.pwa-banner .pwa-ico{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;background:var(--brand);color:#fff;flex:none}
+.pwa-banner b{display:block;font-size:11px}
+.pwa-banner small{display:block;font-size:9px;color:var(--muted);line-height:1.45;margin-top:2px}
+.pwa-banner .btn{margin-left:auto;flex:none}
+.fipi-session-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
+.fipi-session-stat{padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);text-align:center}
+.fipi-session-stat b{display:block;font-size:18px;letter-spacing:-.04em}
+.fipi-session-stat small{display:block;font-size:8px;color:var(--muted);margin-top:2px}
+.fipi-session-form{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.fipi-session-form .full{grid-column:1/-1}
+.fipi-session-form label{display:block;font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--muted-2);margin-bottom:5px}
+.fipi-session-form select,.fipi-session-form input{width:100%;height:38px;border:1px solid var(--line);border-radius:9px;background:var(--surface);padding:0 9px;font:inherit;font-size:10.5px;color:var(--ink);outline:0}
+.fipi-session-form select:focus,.fipi-session-form input:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(81,70,229,.07)}
+.auth-sync-panel{margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.auth-sync-toggle{display:inline-flex;align-items:center;gap:6px;border:0;background:transparent;color:var(--brand);font:inherit;font-size:10px;font-weight:750;cursor:pointer;padding:4px 0}
+.auth-sync-toggle:hover{text-decoration:underline}
+.sync-note code{padding:1px 4px;border-radius:4px;background:var(--surface-2);border:1px solid var(--line);font:inherit;font-size:8px}
+.fipi-session-list{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.fipi-session-row{display:flex;align-items:center;gap:9px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--surface-2);font-size:9.5px}
+.fipi-session-row b{flex:1;min-width:0;font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fipi-session-row span{color:var(--muted);font-size:8.5px;white-space:nowrap}
+.fipi-session-row .ok{color:#087a55;font-weight:800}
+.search-trigger span{display:inline-flex;align-items:center;gap:6px}
+.search-trigger span svg{width:15px;height:15px}
+.topic-due svg{width:10px;height:10px}
+.review-row button{display:inline-flex;align-items:center;gap:4px}
+.review-row button svg{width:11px;height:11px}
+.sync-status > svg{width:18px;height:18px;flex:none;margin-top:1px}
+.auth-sync-toggle > svg{width:15px;height:15px}
+.pwa-banner .pwa-ico svg{width:19px;height:19px}
+[data-theme="dark"] .topic-due{background:#3a2a12;border-color:#6b4a12;color:#ffc46b}
+[data-theme="dark"] .topic-due.overdue{background:#351b1e;border-color:#5b292c;color:#ffb4ac}
+[data-theme="dark"] .search-trigger{background:var(--surface);border-color:var(--line);color:var(--muted)}
+[data-theme="dark"] .search-trigger:hover{background:#211d40;color:#c7c2ff}
+[data-theme="dark"] .search-trigger kbd{background:var(--surface-2);border-color:var(--line)}
+[data-theme="dark"] .search-box{background:var(--surface-2);border-color:var(--line)}
+[data-theme="dark"] .search-result{background:var(--surface);border-color:var(--line)}
+[data-theme="dark"] .search-result:hover{background:#211d40;border-color:#3b3378}
+[data-theme="dark"] .search-result-ico{background:#211d40;color:#c7c2ff}
+[data-theme="dark"] .search-result-ico.q{background:#12352a;color:#9ef0c6}
+[data-theme="dark"] .search-result-ico.c{background:#3a2a12;color:#ffc46b}
+[data-theme="dark"] .search-mark{background:#5c4a12;color:#ffe7a3}
+[data-theme="dark"] .topic-filter{background:var(--surface);border-color:var(--line)}
+[data-theme="dark"] .topic-filter.active{background:#211d40;border-color:var(--brand);color:#c7c2ff}
+[data-theme="dark"] .review-card{background:linear-gradient(125deg,#191a34,#111624 62%,#10231f);border-color:#302a63}
+[data-theme="dark"] .review-row{background:rgba(23,26,42,.8);border-color:var(--line)}
+[data-theme="dark"] .review-row button{background:#211d40;color:#c7c2ff}
+[data-theme="dark"] .sync-status{background:var(--surface-2);border-color:var(--line)}
+[data-theme="dark"] .sync-status.ok{background:#12352a;border-color:#1c5b45;color:#9ef0c6}
+[data-theme="dark"] .sync-status.warn{background:#3a2a12;border-color:#6b4a12;color:#ffc46b}
+[data-theme="dark"] .sync-status.err{background:#351b1e;border-color:#5b292c;color:#ffb4ac}
+[data-theme="dark"] .sync-field input,.fipi-session-form select,.fipi-session-form input{background:var(--surface);border-color:var(--line);color:var(--ink)}
+[data-theme="dark"] .pwa-banner{background:linear-gradient(125deg,#191a34,#111624);border-color:#302a63}
+[data-theme="dark"] .fipi-session-stat{background:var(--surface-2);border-color:var(--line)}
+@media(max-width:720px){
+  .search-trigger span{display:none}
+  .search-trigger kbd{display:none}
+  .search-modal{max-height:90vh}
+  .sync-grid,.fipi-session-form{grid-template-columns:1fr}
+  .fipi-session-summary{grid-template-columns:1fr 1fr}
+  .pwa-banner{align-items:flex-start;flex-wrap:wrap}
+  .pwa-banner .btn{margin-left:0}
+}
 </style>
 </head>
 <body>
@@ -5911,8 +6043,88 @@ const EXTRA_PRACTICE = {
   ]
 };
 
+/* Дополнительный банк: 25 авторских заданий в формате ФИПИ по слабым темам. */
+const EXTRA_PRACTICE_PLUS = {
+  'm-equations': [
+    { text: 'Решите уравнение log₂(x − 1) = 3.', options: ['5', '7', '9', '11'], correct: 2, explanation: 'По определению логарифма x − 1 = 2³ = 8, откуда x = 9. Проверка: log₂ 8 = 3.' }
+  ],
+  'm-planimetry': [
+    { text: 'Стороны прямоугольного треугольника равны 5, 12 и 13. Найдите его площадь.', options: ['24', '30', '60', '65'], correct: 1, explanation: 'Катеты — 5 и 12, гипотенуза — 13. Площадь прямоугольного треугольника равна половине произведения катетов: 5 · 12 / 2 = 30.' }
+  ],
+  'm-derivative': [
+    { text: 'Найдите угловой коэффициент касательной к графику y = x³ в точке x = 2.', options: ['6', '8', '12', '24'], correct: 2, explanation: 'Угловой коэффициент равен производной: y′ = 3x², поэтому y′(2) = 3 · 4 = 12.' }
+  ],
+  'm-probability': [
+    { text: 'Монету бросают дважды. Какова вероятность того, что орёл выпадет оба раза?', options: ['1/2', '1/3', '1/4', '3/4'], correct: 2, explanation: 'Всего равновозможных исходов 2 · 2 = 4, подходит один — «орёл, орёл». Вероятность равна 1/4.' }
+  ],
+  'm-percents': [
+    { text: 'Цену товара 800 ₽ повысили на 25%, а затем новую цену снизили на 20%. Сколько стал стоить товар?', options: ['760 ₽', '800 ₽', '820 ₽', '840 ₽'], correct: 1, explanation: 'После повышения: 800 · 1,25 = 1000 ₽. После снижения: 1000 · 0,8 = 800 ₽. Проценты считаются от разных баз, поэтому цена вернулась к исходной.' }
+  ],
+  'p-dynamics': [
+    { text: 'На тело массой 2 кг действуют сила тяги 10 Н и сила сопротивления 4 Н. Найдите ускорение тела.', options: ['2 м/с²', '3 м/с²', '5 м/с²', '7 м/с²'], correct: 1, explanation: 'Равнодействующая сила: 10 − 4 = 6 Н. По второму закону Ньютона a = F/m = 6 / 2 = 3 м/с².' }
+  ],
+  'p-conservation': [
+    { text: 'Тело массой 0,5 кг движется со скоростью 4 м/с. Найдите импульс тела.', options: ['0,5 кг·м/с', '2 кг·м/с', '4 кг·м/с', '8 кг·м/с'], correct: 1, explanation: 'Импульс p = mv = 0,5 · 4 = 2 кг·м/с.' }
+  ],
+  'p-electro': [
+    { text: 'Напряжение на резисторе 12 В, его сопротивление 4 Ом. Найдите мощность тока.', options: ['3 Вт', '12 Вт', '36 Вт', '48 Вт'], correct: 2, explanation: 'Сначала сила тока I = U/R = 12/4 = 3 А. Мощность P = UI = 12 · 3 = 36 Вт (или P = U²/R = 144/4).' }
+  ],
+  'p-thermo': [
+    { text: 'КПД теплового двигателя 40%. За цикл рабочее тело получило 500 Дж теплоты. Какая полезная работа совершена?', options: ['100 Дж', '200 Дж', '300 Дж', '500 Дж'], correct: 1, explanation: 'КПД = A/Q₁, поэтому A = 0,4 · 500 = 200 Дж. Остальные 300 Дж переданы холодильнику.' }
+  ],
+  'p-optics': [
+    { text: 'Предмет находится на расстоянии 15 см от собирающей линзы с фокусным расстоянием 10 см. Найдите расстояние от линзы до изображения.', options: ['10 см', '15 см', '30 см', '45 см'], correct: 2, explanation: '1/f = 1/d + 1/d′. Тогда 1/d′ = 1/10 − 1/15 = 1/30, значит d′ = 30 см.' }
+  ],
+  'r-orthoepy': [
+    { text: 'В каком слове ударение падает на первый слог?', options: ['звонит', 'торты', 'досуг', 'оптовый'], correct: 1, explanation: 'ТОрты — ударение на первый слог. Нормы остальных: звонИт — на второй, досУг — на второй, оптОвый — на второй.' }
+  ],
+  'r-paronyms': [
+    { text: 'В каком словосочетании слово употреблено правильно?', options: ['представить отпуск', 'предоставить отпуск', 'представить сотрудника к отпуску', 'предоставить сотрудника к отпуску'], correct: 1, explanation: 'Предоставить — дать возможность, выделить: предоставить отпуск. Представить — познакомить, показать или предъявить.' }
+  ],
+  'r-roots': [
+    { text: 'Какая гласная пишется в слове «заг..рать»?', options: ['а', 'о', 'е', 'и'], correct: 1, explanation: 'В корне -гар-/-гор- без ударения пишется О: загорать. Под ударением — А: загар.' }
+  ],
+  'r-punctuation': [
+    { text: 'В каком предложении нужно поставить тире между подлежащим и сказуемым?', options: ['Москва — столица России.', 'Москва стоит на реке Москве.', 'Мы поехали в Москву.', 'Москва мне нравится.'], correct: 0, explanation: 'Тире ставится, когда подлежащее и сказуемое выражены существительными в именительном падеже: Москва — столица России.' }
+  ],
+  'r-suffixes': [
+    { text: 'Какая буква пишется в слове «бор..щийся»?', options: ['ю', 'я', 'е', 'и'], correct: 0, explanation: 'Причастие образовано от глагола I спряжения «бороться», поэтому пишется -ющ-: борющийся.' }
+  ],
+  's-economy': [
+    { text: 'Какой пример иллюстрирует функцию денег как меры стоимости?', options: ['Цена товара указана на ценнике.', 'Покупатель расплатился картой.', 'Фирма взяла кредит.', 'Продавец отложил выручку в сейф.'], correct: 0, explanation: 'Как мера стоимости деньги выражают цену товара. Оплата картой — средство обращения, кредит и сбережения — другие функции.' }
+  ],
+  's-politics': [
+    { text: 'Какой орган осуществляет исполнительную власть в Российской Федерации?', options: ['Федеральное Собрание', 'Правительство РФ', 'Верховный Суд', 'Общественная палата'], correct: 1, explanation: 'Правительство РФ осуществляет исполнительную власть. Федеральное Собрание — законодательная, суды — судебная.' }
+  ],
+  's-law': [
+    { text: 'Что является примером административного правонарушения?', options: ['переход дороги на красный сигнал', 'кража телефона', 'разбойное нападение', 'невыплата заработной платы'], correct: 0, explanation: 'Переход дороги на красный сигнал — нарушение правил дорожного движения, административный проступок. Кража и разбой — уголовные преступления.' }
+  ],
+  's-social': [
+    { text: 'Что такое социальная норма?', options: ['общепринятое правило поведения, регулирующее отношения между людьми', 'личное желание человека', 'природный инстинкт', 'официальный документ предприятия'], correct: 0, explanation: 'Социальные нормы — правила поведения, которые регулируют взаимодействие людей и поддерживаются обществом.' }
+  ],
+  's-finance': [
+    { text: 'Что происходит с покупательной способностью денег при инфляции?', options: ['она снижается', 'она растёт', 'она не меняется', 'она становится бесконечной'], correct: 0, explanation: 'Инфляция — рост общего уровня цен, поэтому на ту же сумму денег можно купить меньше товаров.' }
+  ],
+  'h-east-slavs': [
+    { text: 'Кто крестил Русь в 988 г.?', options: ['Владимир Святославич', 'Ярослав Мудрый', 'Олег Вещий', 'Игорь Рюрикович'], correct: 0, explanation: 'Крещение Руси связано с князем Владимиром Святославичем. Ярослав Мудрый жил позже, Олег и Игорь — до Владимира.' }
+  ],
+  'h-mongol-moscow': [
+    { text: 'Что произошло в 1380 г.?', options: ['Куликовская битва', 'Ледовое побоище', 'стояние на Угре', 'взятие Казани'], correct: 0, explanation: 'В 1380 г. русские войска под руководством Дмитрия Донского разбили войско Мамая на Куликовом поле.' }
+  ],
+  'h-muscovy': [
+    { text: 'Что такое опричнина?', options: ['политика Ивана Грозного, направленная на укрепление личной власти', 'реформа местного самоуправления', 'сборник законов', 'орган городского управления'], correct: 0, explanation: 'Опричнина — система мер Ивана IV, включавшая репрессии и раздел земель, направленная на борьбу с боярской оппозицией.' }
+  ],
+  'h-peter': [
+    { text: 'Какое сражение произошло в 1709 г.?', options: ['Полтавская битва', 'Битва при Лесной', 'Гангутское сражение', 'Бородинское сражение'], correct: 0, explanation: 'Полтавская битва 1709 г. завершилась разгромом шведской армии Карла XII. Гангут — 1714 г., Бородино — 1812 г.' }
+  ],
+  'h-revolutions': [
+    { text: 'Что стало непосредственным результатом Февральской революции 1917 г.?', options: ['отречение Николая II от престола', 'принятие Конституции СССР', 'начало индустриализации', 'создание СНГ'], correct: 0, explanation: 'В феврале 1917 г. Николай II отрёкся от престола, монархия пала. Остальные события относятся к другим периодам.' }
+  ]
+};
+
 TOPICS.forEach(topic => {
   if (EXTRA_PRACTICE[topic.id]) topic.questions.push(...EXTRA_PRACTICE[topic.id]);
+  if (EXTRA_PRACTICE_PLUS[topic.id]) topic.questions.push(...EXTRA_PRACTICE_PLUS[topic.id]);
 });
 
 TOPICS.forEach(topic => {
@@ -5982,7 +6194,7 @@ const SESSION_LABELS = {
   mock: 'Мини-пробник'
 };
 const DEFAULT_PREFERRED_TIMES = ['16:00', '18:00', '20:00'];
-const PLAN_VERSION = 2;
+const PLAN_VERSION = 3;
 
 const KIM_TASK_COUNTS = { math: 18, russian: 27, physics: 26, social: 25, history: 21, essay: 6 };
 const KIM_POINTS = {
@@ -6359,7 +6571,8 @@ function defaultState() {
       mood: [],
       anxiety: { completed: {}, lastAt: '', sessions: 0 },
       surprise: { attempts: 0, best: 0, lastAt: '', history: [] },
-      schedule: { source: '', importedAt: '', lessons: [] }
+      schedule: { source: '', importedAt: '', lessons: [] },
+      fipiSessions: []
     },
     group: null,
     settings: {
@@ -6471,12 +6684,22 @@ function normalizeTopicMap(value) {
   const topics = {};
   Object.entries(asRecord(value)).forEach(([id, entry]) => {
     if (!TOPIC_BY_ID[id] || !isPlainRecord(entry)) return;
+    const sm2Source = asRecord(entry.sm2);
     topics[id] = {
       ...entry,
       theory: Boolean(entry.theory),
       practice: Boolean(entry.practice),
       attempts: Math.max(0, asFiniteNumber(entry.attempts, 0)),
-      best: clamp(asFiniteNumber(entry.best, 0), 0, 100)
+      best: clamp(asFiniteNumber(entry.best, 0), 0, 100),
+      sm2: {
+        ease: clamp(asFiniteNumber(sm2Source.ease, 2.5), 1.3, 2.8),
+        interval: Math.max(0, asFiniteNumber(sm2Source.interval, 0)),
+        reps: Math.max(0, Math.floor(asFiniteNumber(sm2Source.reps, 0))),
+        lapses: Math.max(0, Math.floor(asFiniteNumber(sm2Source.lapses, 0))),
+        due: asISODate(sm2Source.due),
+        lastQuality: clamp(asFiniteNumber(sm2Source.lastQuality, 0), 0, 5),
+        lastReviewed: typeof sm2Source.lastReviewed === 'string' ? sm2Source.lastReviewed : ''
+      }
     };
   });
   return topics;
@@ -6621,6 +6844,18 @@ function normalizeProgress(progress) {
       source: typeof lesson.source === 'string' ? lesson.source : 'manual'
     })).slice(-1000)
   };
+  const fipiSessions = asArray(source.fipiSessions).filter(entry => (
+    isPlainRecord(entry) && SUBJECTS[entry.subject] && asISODate(entry.date)
+  )).map(entry => ({
+    id: typeof entry.id === 'string' ? entry.id : 'fipi-' + entry.date + '-' + Math.random().toString(36).slice(2, 8),
+    date: asISODate(entry.date),
+    subject: entry.subject,
+    topicId: TOPIC_BY_ID[entry.topicId] ? entry.topicId : null,
+    solved: clamp(Math.floor(asFiniteNumber(entry.solved, 0)), 0, 20),
+    correct: clamp(Math.floor(asFiniteNumber(entry.correct, 0)), 0, 20),
+    minutes: clamp(Math.floor(asFiniteNumber(entry.minutes, 0)), 0, 240),
+    at: typeof entry.at === 'string' ? entry.at : entry.date + 'T12:00:00.000Z'
+  })).slice(-400);
   return {
     topics: normalizeTopicMap(source.topics),
     sessions,
@@ -6647,7 +6882,8 @@ function normalizeProgress(progress) {
     mood,
     anxiety,
     surprise,
-    schedule
+    schedule,
+    fipiSessions
   };
 }
 
@@ -7562,6 +7798,17 @@ let celebrationTimer = null;
 let freshAchievements = new Set();
 let trainerInterval = null;
 let surpriseTimeLeft = 0;
+let searchState = { query: '', filter: 'all' };
+let topicFilter = 'all';
+let fipiDraft = null;
+let syncConfig = readSyncConfig();
+let syncDraft = { code: syncConfig.code || '', passphrase: '', server: syncConfig.server || defaultSyncUrl() };
+let syncBusy = false;
+let syncMessage = null;
+let authSyncOpen = false;
+let pwaInstallPrompt = null;
+let pwaInstallAvailable = false;
+let pwaRegistration = null;
 
 function loadState(key) {
   try {
@@ -7581,6 +7828,700 @@ function saveState() {
   } catch (error) {
     showToast('Не удалось сохранить', 'Проверьте свободное место в браузере.', 'error');
   }
+}
+
+/* === Синхронизация: шифруемая копия аккаунтов на своём сервере === */
+
+function readSyncConfig() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem('fokus_sync_v1') || '{}');
+    return {
+      code: typeof parsed.code === 'string' ? parsed.code : '',
+      server: typeof parsed.server === 'string' ? parsed.server : '',
+      lastSyncAt: typeof parsed.lastSyncAt === 'string' ? parsed.lastSyncAt : '',
+      lastDirection: parsed.lastDirection === 'download' ? 'download' : parsed.lastDirection === 'upload' ? 'upload' : ''
+    };
+  } catch (error) {
+    return { code: '', server: '', lastSyncAt: '', lastDirection: '' };
+  }
+}
+
+function saveSyncConfig(next) {
+  syncConfig = { ...syncConfig, ...(next || {}) };
+  try {
+    localStorage.setItem('fokus_sync_v1', JSON.stringify(syncConfig));
+  } catch (error) {}
+}
+
+function defaultSyncUrl() {
+  if (typeof location !== 'undefined' && /^https?:/.test(location.protocol)) {
+    return location.origin + '/api/sync';
+  }
+  return 'http://127.0.0.1:8765/api/sync';
+}
+
+function syncEndpoint(code) {
+  const base = String(syncDraft.server || defaultSyncUrl()).trim().replace(/\/+$/, '');
+  return base + '/' + encodeURIComponent(String(code || '').trim());
+}
+
+function syncValidationError(requirePassphrase = true) {
+  const code = String(syncDraft.code || '').trim();
+  const passphrase = String(syncDraft.passphrase || '');
+  if (!/^[A-Za-z0-9_-]{8,64}$/.test(code)) return 'Код синхронизации: 8–64 символа, латиница, цифры, _ и -.';
+  if (requirePassphrase && passphrase.length < 8) return 'Пароль синхронизации должен содержать минимум 8 символов.';
+  if (!/^https?:\/\//.test(String(syncDraft.server || '').trim())) return 'Адрес сервера должен начинаться с http:// или https://.';
+  return '';
+}
+
+function bytesToBase64(bytes) {
+  let binary = '';
+  const chunk = 0x8000;
+  for (let index = 0; index < bytes.length; index += chunk) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(index, index + chunk));
+  }
+  return btoa(binary);
+}
+
+function base64ToBytes(value) {
+  const binary = atob(String(value || ''));
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+  return bytes;
+}
+
+async function deriveSyncKey(passphrase, saltHex) {
+  if (!window.crypto?.subtle) throw new Error('Для синхронизации нужен современный браузер с WebCrypto.');
+  const material = await window.crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(String(passphrase)),
+    'PBKDF2',
+    false,
+    ['deriveKey']
+  );
+  return window.crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt: hexToBytes(saltHex), iterations: 210000, hash: 'SHA-256' },
+    material,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt', 'decrypt']
+  );
+}
+
+async function encryptSyncPayload(payload, passphrase) {
+  const salt = randomHex(16);
+  const iv = window.crypto.getRandomValues(new Uint8Array(12));
+  const key = await deriveSyncKey(passphrase, salt);
+  const encrypted = await window.crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv },
+    key,
+    new TextEncoder().encode(JSON.stringify(payload))
+  );
+  return {
+    v: 1,
+    salt,
+    iv: bytesToHex(iv),
+    data: bytesToBase64(new Uint8Array(encrypted)),
+    updatedAt: new Date().toISOString()
+  };
+}
+
+async function decryptSyncEnvelope(envelope, passphrase) {
+  if (!envelope || envelope.v !== 1 || !envelope.salt || !envelope.iv || !envelope.data) {
+    throw new Error('Сервер вернул данные в неизвестном формате.');
+  }
+  const key = await deriveSyncKey(passphrase, envelope.salt);
+  const decrypted = await window.crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv: hexToBytes(envelope.iv) },
+    key,
+    base64ToBytes(envelope.data)
+  );
+  return JSON.parse(new TextDecoder().decode(decrypted));
+}
+
+function buildSyncPayload() {
+  const accounts = readAccounts();
+  const states = {};
+  accounts.users.forEach(user => {
+    try {
+      const raw = localStorage.getItem(accountStateKey(user.id));
+      if (raw) states[user.id] = JSON.parse(raw);
+    } catch (error) {}
+  });
+  if (currentUser && state) states[currentUser.id] = state;
+  return {
+    v: 1,
+    exportedAt: new Date().toISOString(),
+    accounts: accounts.users,
+    states
+  };
+}
+
+function mergeSyncPayload(payload) {
+  if (!payload || payload.v !== 1 || !Array.isArray(payload.accounts)) {
+    throw new Error('В загруженной копии нет данных аккаунтов.');
+  }
+  const local = readAccounts();
+  const byEmail = new Map(local.users.map(user => [normalizeEmail(user.email), user]));
+  const remoteToLocalId = {};
+  let importedAccounts = 0;
+  payload.accounts.forEach(remote => {
+    if (!remote || !remote.id || !remote.email || !remote.hash || !remote.salt) return;
+    const email = normalizeEmail(remote.email);
+    const existing = byEmail.get(email);
+    if (existing) {
+      existing.name = remote.name || existing.name;
+      existing.lastLoginAt = remote.lastLoginAt || existing.lastLoginAt;
+      remoteToLocalId[remote.id] = existing.id;
+      return;
+    }
+    const user = {
+      id: remote.id,
+      name: String(remote.name || 'Ученик'),
+      email,
+      salt: remote.salt,
+      hash: remote.hash,
+      algo: remote.algo || 'pbkdf2-sha256',
+      iterations: Number(remote.iterations) || 1,
+      createdAt: remote.createdAt || new Date().toISOString(),
+      lastLoginAt: remote.lastLoginAt || remote.createdAt || new Date().toISOString()
+    };
+    local.users.push(user);
+    byEmail.set(email, user);
+    remoteToLocalId[remote.id] = user.id;
+    importedAccounts += 1;
+  });
+  writeAccounts(local);
+  let importedStates = 0;
+  Object.entries(payload.states || {}).forEach(([remoteId, remoteState]) => {
+    const localId = remoteToLocalId[remoteId] || remoteId;
+    if (!findAccountById(localId) || !remoteState || typeof remoteState !== 'object') return;
+    const key = accountStateKey(localId);
+    let localState = null;
+    try {
+      localState = JSON.parse(localStorage.getItem(key) || 'null');
+    } catch (error) {}
+    const localTime = Date.parse(localState?.meta?.lastOpen || localState?.plan?.generatedAt || 0) || 0;
+    const remoteTime = Date.parse(remoteState?.meta?.lastOpen || remoteState?.plan?.generatedAt || payload.exportedAt || 0) || 0;
+    if (!localState || remoteTime > localTime) {
+      localStorage.setItem(key, JSON.stringify(normalizeState(remoteState)));
+      importedStates += 1;
+    }
+  });
+  return { importedAccounts, importedStates };
+}
+
+function setSyncMessage(type, text) {
+  syncMessage = { type, text };
+}
+
+async function syncUpload() {
+  if (syncBusy) return;
+  const invalid = syncValidationError();
+  if (invalid) {
+    setSyncMessage('err', invalid);
+    render();
+    return;
+  }
+  syncBusy = true;
+  setSyncMessage('info', 'Шифруем и отправляем копию аккаунта…');
+  render();
+  try {
+    const envelope = await encryptSyncPayload(buildSyncPayload(), syncDraft.passphrase);
+    const response = await fetch(syncEndpoint(syncDraft.code), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(envelope)
+    });
+    if (!response.ok) throw new Error('Сервер ответил ' + response.status + '. Проверьте адрес и что сервер синхронизации запущен.');
+    saveSyncConfig({
+      code: String(syncDraft.code).trim(),
+      server: String(syncDraft.server).trim(),
+      lastSyncAt: new Date().toISOString(),
+      lastDirection: 'upload'
+    });
+    setSyncMessage('ok', 'Копия выгружена. На другом устройстве введите тот же код и пароль и нажмите «Забрать».');
+    showToast('Синхронизация готова', 'Аккаунт зашифрован и отправлен на сервер.', 'success');
+  } catch (error) {
+    setSyncMessage('err', error?.message || 'Не удалось выгрузить данные.');
+  } finally {
+    syncBusy = false;
+    render();
+  }
+}
+
+async function syncDownload() {
+  if (syncBusy) return;
+  const invalid = syncValidationError();
+  if (invalid) {
+    setSyncMessage('err', invalid);
+    render();
+    return;
+  }
+  syncBusy = true;
+  setSyncMessage('info', 'Скачиваем и расшифровываем копию…');
+  render();
+  try {
+    const response = await fetch(syncEndpoint(syncDraft.code), { method: 'GET', cache: 'no-store' });
+    if (response.status === 404) throw new Error('Код не найден. Сначала выгрузите данные с устройства, где уже есть аккаунт.');
+    if (!response.ok) throw new Error('Сервер ответил ' + response.status + '. Проверьте адрес сервера.');
+    const envelope = await response.json();
+    const payload = await decryptSyncEnvelope(envelope, syncDraft.passphrase);
+    const result = mergeSyncPayload(payload);
+    saveSyncConfig({
+      code: String(syncDraft.code).trim(),
+      server: String(syncDraft.server).trim(),
+      lastSyncAt: new Date().toISOString(),
+      lastDirection: 'download'
+    });
+    authMode = readAccounts().users.length ? 'login' : 'register';
+    if (currentUser) {
+      const reloaded = loadState(activeStorageKey);
+      if (reloaded) {
+        state = reloaded;
+        prepareAuthenticatedView();
+      }
+    }
+    setSyncMessage('ok', 'Загружено: аккаунтов — ' + result.importedAccounts + ', обновлённых профилей — ' + result.importedStates + '. Войдите с прежним email и паролем.');
+    showToast('Данные загружены', currentUser ? 'Профиль обновлён.' : 'Теперь войдите с прежним email и паролем.', 'success');
+    authSyncOpen = false;
+    syncDraft.passphrase = '';
+  } catch (error) {
+    setSyncMessage('err', error?.message || 'Не удалось загрузить данные.');
+  } finally {
+    syncBusy = false;
+    render();
+  }
+}
+
+function saveSyncSettings() {
+  const invalid = syncValidationError(false);
+  if (invalid) {
+    setSyncMessage('err', invalid);
+    render();
+    return;
+  }
+  saveSyncConfig({ code: String(syncDraft.code).trim(), server: String(syncDraft.server).trim() });
+  setSyncMessage('ok', 'Настройки синхронизации сохранены на этом устройстве.');
+  render();
+}
+
+function forgetSyncSettings() {
+  try {
+    localStorage.removeItem('fokus_sync_v1');
+  } catch (error) {}
+  syncConfig = { code: '', server: '', lastSyncAt: '', lastDirection: '' };
+  syncDraft = { code: '', passphrase: '', server: defaultSyncUrl() };
+  syncMessage = { type: 'info', text: 'Код синхронизации удалён с этого устройства.' };
+  render();
+}
+
+/* === Глобальный поиск === */
+
+function normalizeSearch(value) {
+  return String(value || '').toLocaleLowerCase('ru').replace(/ё/g, 'е').replace(/\s+/g, ' ').trim();
+}
+
+let SEARCH_INDEX = null;
+
+function buildSearchIndex() {
+  const entries = [];
+  TOPICS.forEach(topic => {
+    const subject = SUBJECTS[topic.subject];
+    const theoryText = [topic.theory?.lead, ...(topic.theory?.blocks || []).map(block => (
+      [block.title, block.text, ...(block.items || [])].filter(Boolean).join(' ')
+    )), ...(TOPIC_MISTAKES[topic.id] || [])].filter(Boolean).join(' ');
+    entries.push({
+      type: 'topic',
+      topicId: topic.id,
+      subject: topic.subject,
+      title: topic.title,
+      text: (topic.examTasks || '') + ' · ' + (topic.theory?.lead || ''),
+      search: normalizeSearch([topic.title, topic.examTasks, theoryText, subject?.name].join(' '))
+    });
+    entries.push({
+      type: 'cheat',
+      topicId: topic.id,
+      subject: topic.subject,
+      title: 'Шпаргалка: ' + topic.title,
+      text: theoryText,
+      search: normalizeSearch(['шпаргалка', topic.title, theoryText].join(' '))
+    });
+    topic.questions.forEach(question => {
+      entries.push({
+        type: 'question',
+        topicId: topic.id,
+        questionId: question.id,
+        subject: topic.subject,
+        title: question.text,
+        text: question.options.join(' · ') + ' — ' + question.explanation,
+        search: normalizeSearch([question.text, question.options.join(' '), question.explanation, topic.title].join(' '))
+      });
+    });
+  });
+  SEARCH_INDEX = entries;
+  return entries;
+}
+
+function searchEntries(query, filter) {
+  const normalized = normalizeSearch(query);
+  if (!normalized) return [];
+  const tokens = normalized.split(' ').filter(token => token.length >= 2);
+  if (!tokens.length) return [];
+  return (SEARCH_INDEX || buildSearchIndex())
+    .filter(entry => filter === 'all' || entry.type === filter)
+    .map(entry => {
+      if (!tokens.every(token => entry.search.includes(token))) return null;
+      const title = normalizeSearch(entry.title);
+      let score = 0;
+      if (title === normalized) score += 120;
+      else if (title.startsWith(normalized)) score += 80;
+      else if (title.includes(normalized)) score += 55;
+      if (tokens.every(token => title.includes(token))) score += 25;
+      if (entry.type === 'topic') score += 6;
+      if (entry.type === 'cheat') score += 3;
+      return { entry, score };
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.score - a.score || a.entry.title.length - b.entry.title.length)
+    .slice(0, 40)
+    .map(item => item.entry);
+}
+
+function searchSnippet(text, query) {
+  const raw = String(text || '').replace(/\s+/g, ' ').trim();
+  const normalized = normalizeSearch(query);
+  if (!normalized) return raw.slice(0, 150);
+  const lower = normalizeSearch(raw);
+  const firstToken = normalized.split(' ').find(token => lower.includes(token)) || '';
+  const index = firstToken ? Math.max(0, lower.indexOf(firstToken) - 42) : 0;
+  const snippet = raw.slice(index, index + 150);
+  return (index > 0 ? '…' : '') + snippet + (raw.length > index + 150 ? '…' : '');
+}
+
+function highlightSearch(text, query) {
+  const tokens = normalizeSearch(query).split(' ').filter(token => token.length >= 2);
+  if (!tokens.length) return escapeHTML(text);
+  const pattern = tokens.map(token => token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+  const parts = String(text || '').split(new RegExp('(' + pattern + ')', 'gi'));
+  return parts.map((part, index) => (
+    index % 2 ? '<mark class="search-mark">' + escapeHTML(part) + '</mark>' : escapeHTML(part)
+  )).join('');
+}
+
+function searchTypeLabel(type) {
+  return type === 'question' ? 'Задание' : type === 'cheat' ? 'Шпаргалка' : 'Тема';
+}
+
+function renderSearchResults() {
+  const query = searchState.query.trim();
+  if (!query) {
+    return '<div class="search-empty"><b>Ищите по всему курсу</b><small>Темы, задания и шпаргалки — всё в одном месте. Начните вводить слово или нажмите на подсказку.</small></div>' +
+      '<div class="search-filters" style="padding:0;justify-content:center">' +
+        ['функции', 'правописание', 'Конституция', 'вероятность', 'Пётр I'].map(word => '<button class="search-filter" data-action="search-suggest" data-query="' + escapeHTML(word) + '">' + escapeHTML(word) + '</button>').join('') +
+      '</div>';
+  }
+  const results = searchEntries(query, searchState.filter);
+  if (!results.length) {
+    return '<div class="search-empty"><b>Ничего не нашлось</b><small>Попробуйте другое слово или снимите фильтр. Например, «проценты», «паронимы», «Великая Отечественная».</small></div>';
+  }
+  return '<div class="search-results">' + results.map(entry => {
+    const subject = SUBJECTS[entry.subject];
+    const iconText = entry.type === 'question' ? '?' : entry.type === 'cheat' ? 'Z' : (subject?.icon || 'Т');
+    return '' +
+      '<button class="search-result" data-action="search-open" data-type="' + entry.type + '" data-topic="' + entry.topicId + '" data-question="' + (entry.questionId || '') + '">' +
+        '<span class="search-result-ico ' + (entry.type === 'question' ? 'q' : entry.type === 'cheat' ? 'c' : '') + '">' + escapeHTML(iconText) + '</span>' +
+        '<span class="search-result-main"><b>' + highlightSearch(entry.title, query) + '</b><small>' + highlightSearch(searchSnippet(entry.text, query), query) + '</small></span>' +
+        '<span class="search-result-meta"><span>' + searchTypeLabel(entry.type) + '</span><span>' + escapeHTML(subject?.short || '') + '</span></span>' +
+      '</button>';
+  }).join('') + '</div>';
+}
+
+function renderSearchModal() {
+  const filters = [
+    ['all', 'Всё'],
+    ['topic', 'Темы'],
+    ['question', 'Задания'],
+    ['cheat', 'Шпаргалки']
+  ];
+  return '' +
+    '<div class="modal search-modal" role="dialog" aria-modal="true" aria-label="Поиск по курсу">' +
+      '<div class="modal-head"><div class="confirm-icon">' + icon('search') + '</div><div><h2>Поиск</h2><p>Темы, задания и шпаргалки по всем предметам.</p></div><button class="icon-btn" data-action="close-modal" aria-label="Закрыть">' + icon('x') + '</button></div>' +
+      '<div class="search-box">' + icon('search') + '<input type="search" data-search-input placeholder="Например: логарифмы, паронимы, Конституция…" value="' + escapeHTML(searchState.query) + '" autocomplete="off" autofocus>' + (searchState.query ? '<button class="search-clear" data-action="search-clear" aria-label="Очистить">' + icon('x') + '</button>' : '') + '</div>' +
+      '<div class="search-filters">' + filters.map(([id, label]) => '<button class="search-filter' + (searchState.filter === id ? ' active' : '') + '" data-action="search-filter" data-filter="' + id + '">' + label + '</button>').join('') + '</div>' +
+      '<div class="modal-body"><div data-search-results>' + renderSearchResults() + '</div><div class="search-hint">Ctrl K — открыть поиск · Esc — закрыть</div></div>' +
+    '</div>';
+}
+
+function openSearch() {
+  if (!currentUser) return;
+  searchState = { query: '', filter: 'all' };
+  modal = { type: 'search' };
+  render();
+  requestAnimationFrame(() => {
+    const input = document.querySelector('[data-search-input]');
+    if (input) input.focus();
+  });
+}
+
+function updateSearchResults() {
+  const root = document.querySelector('[data-search-results]');
+  if (root) root.innerHTML = renderSearchResults();
+  const box = document.querySelector('.search-box');
+  if (box) {
+    const clear = box.querySelector('.search-clear');
+    if (searchState.query && !clear) {
+      const button = document.createElement('button');
+      button.className = 'search-clear';
+      button.dataset.action = 'search-clear';
+      button.setAttribute('aria-label', 'Очистить');
+      button.innerHTML = icon('x');
+      box.appendChild(button);
+    } else if (!searchState.query && clear) {
+      clear.remove();
+    }
+  }
+}
+
+/* === Фильтры тем === */
+
+function topicFilterMatches(topic) {
+  if (topicFilter === 'all') return true;
+  const progress = state.progress.topics[topic.id] || {};
+  if (topicFilter === 'weak') {
+    const best = Number(progress.best || 0);
+    const hasMistake = Object.values(state.progress.mistakes || {}).some(item => QUESTION_BY_ID[item.questionId]?.topicId === topic.id);
+    const due = progress.sm2?.due && progress.sm2.due <= toISO(new Date());
+    return Boolean(hasMistake || due || (Number(progress.attempts || 0) > 0 && best < 60));
+  }
+  if (topicFilter === 'theory') return !progress.theory;
+  if (topicFilter === 'no-practice') return !progress.practice;
+  return true;
+}
+
+function topicFilterCounts(topics) {
+  return {
+    all: topics.length,
+    weak: topics.filter(topic => {
+      const progress = state.progress.topics[topic.id] || {};
+      const best = Number(progress.best || 0);
+      const hasMistake = Object.values(state.progress.mistakes || {}).some(item => QUESTION_BY_ID[item.questionId]?.topicId === topic.id);
+      const due = progress.sm2?.due && progress.sm2.due <= toISO(new Date());
+      return Boolean(hasMistake || due || (Number(progress.attempts || 0) > 0 && best < 60));
+    }).length,
+    theory: topics.filter(topic => !state.progress.topics[topic.id]?.theory).length,
+    noPractice: topics.filter(topic => !state.progress.topics[topic.id]?.practice).length
+  };
+}
+
+function renderTopicFilterChips(topics) {
+  const counts = topicFilterCounts(topics);
+  const items = [
+    ['all', 'Все', counts.all],
+    ['weak', 'Слабые', counts.weak],
+    ['theory', 'Ждут теории', counts.theory],
+    ['no-practice', 'Без практики', counts.noPractice]
+  ];
+  return '<div class="topic-filters">' + items.map(([id, label, count]) => (
+    '<button class="topic-filter' + (topicFilter === id ? ' active' : '') + '" data-action="topic-filter" data-filter="' + id + '">' + label + '<b>' + count + '</b></button>'
+  )).join('') + '</div>';
+}
+
+/* === ФИПИ-сессии: самопроверка по официальному банку === */
+
+function fipiStats() {
+  const sessions = state.progress.fipiSessions || [];
+  const solved = sessions.reduce((sum, item) => sum + Number(item.solved || 0), 0);
+  const correct = sessions.reduce((sum, item) => sum + Number(item.correct || 0), 0);
+  return { sessions: sessions.length, solved, correct, accuracy: solved ? Math.round(correct / solved * 100) : 0 };
+}
+
+function ensureFipiDraft(subjectId) {
+  const subject = SUBJECTS[subjectId] ? subjectId : (fipiDraft?.subject && SUBJECTS[fipiDraft.subject] ? fipiDraft.subject : (profileSubjects()[0] || SUBJECT_ORDER[0]));
+  const topics = topicsForSubject(subject);
+  if (!fipiDraft) {
+    fipiDraft = { subject, topicId: topics[0]?.id || '', solved: 5, correct: 4, minutes: 15, originSessionId: null };
+  }
+  if (!SUBJECTS[fipiDraft.subject]) fipiDraft.subject = subject;
+  if (fipiDraft.subject !== subject) fipiDraft.subject = subject;
+  if (!topics.some(topic => topic.id === fipiDraft.topicId)) fipiDraft.topicId = topics[0]?.id || '';
+  return fipiDraft;
+}
+
+function openFipiSession(subjectId, sessionId) {
+  fipiDraft = null;
+  ensureFipiDraft(subjectId);
+  fipiDraft.originSessionId = sessionId || null;
+  openModal('fipi-session');
+}
+
+function renderFipiSessionModal() {
+  const draft = ensureFipiDraft();
+  const topics = topicsForSubject(draft.subject);
+  const subject = SUBJECTS[draft.subject];
+  const stats = fipiStats();
+  return '' +
+    '<div class="modal" role="dialog" aria-modal="true" aria-label="Отметить работу с банком ФИПИ">' +
+      '<div class="modal-head"><div class="confirm-icon">' + icon('bank') + '</div><div><h2>Работа с банком ФИПИ</h2><p>Решите задания на официальном сайте и внесите результат. Это честная самопроверка, а не копия заданий.</p></div><button class="icon-btn" data-action="close-modal" aria-label="Закрыть">' + icon('x') + '</button></div>' +
+      '<div class="modal-body">' +
+        '<div class="notice">' + icon('info') + '<div><b>Сначала первоисточник.</b> ' + externalLink(fipiSubjectUrl(draft.subject), 'Откройте банк ФИПИ по предмету «' + escapeHTML(subject.short) + '»') + ', решите задания и вернитесь сюда с результатом.</div></div>' +
+        '<div class="fipi-session-form">' +
+          '<div><label>Предмет</label><select data-fipi-field="subject">' + profileSubjects().map(id => '<option value="' + id + '"' + (id === draft.subject ? ' selected' : '') + '>' + escapeHTML(SUBJECTS[id].short) + '</option>').join('') + '</select></div>' +
+          '<div><label>Тема</label><select data-fipi-field="topicId">' + topics.map(topic => '<option value="' + topic.id + '"' + (topic.id === draft.topicId ? ' selected' : '') + '>' + escapeHTML(topic.title) + '</option>').join('') + '</select></div>' +
+          '<div><label>Решено заданий</label><input type="number" min="1" max="20" step="1" value="' + draft.solved + '" data-fipi-field="solved"></div>' +
+          '<div><label>Верно</label><input type="number" min="0" max="20" step="1" value="' + draft.correct + '" data-fipi-field="correct"></div>' +
+          '<div class="full"><label>Потрачено минут</label><input type="number" min="1" max="240" step="1" value="' + draft.minutes + '" data-fipi-field="minutes"></div>' +
+        '</div>' +
+        '<div class="fipi-session-summary"><div class="fipi-session-stat"><b>' + stats.sessions + '</b><small>сессий всего</small></div><div class="fipi-session-stat"><b>' + stats.solved + '</b><small>заданий решено</small></div><div class="fipi-session-stat"><b>' + stats.accuracy + '%</b><small>точность</small></div></div>' +
+        '<div class="sync-note">Результат попадёт в прогресс темы, журнал ошибок не пополнится автоматически, а повторение получит качество по проценту верных ответов.</div>' +
+      '</div>' +
+      '<div class="modal-foot"><span class="foot-note">Без перепечатки заданий ФИПИ.</span><div class="modal-foot-actions"><button class="btn btn-ghost btn-sm" data-action="close-modal">Отмена</button><button class="btn btn-primary btn-sm" data-action="save-fipi-session">' + icon('check') + 'Сохранить результат</button></div></div>' +
+    '</div>';
+}
+
+function saveFipiSession() {
+  const draft = ensureFipiDraft();
+  const solved = clamp(Math.floor(Number(draft.solved) || 0), 1, 20);
+  const correct = clamp(Math.floor(Number(draft.correct) || 0), 0, solved);
+  const minutes = clamp(Math.floor(Number(draft.minutes) || 0), 1, 240);
+  const topic = TOPIC_BY_ID[draft.topicId];
+  const date = toISO(new Date());
+  const percent = Math.round(correct / solved * 100);
+  state.progress.fipiSessions.push({
+    id: 'fipi-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7),
+    date,
+    subject: draft.subject,
+    topicId: topic?.id || null,
+    solved,
+    correct,
+    minutes,
+    at: new Date().toISOString()
+  });
+  state.progress.fipiSessions = state.progress.fipiSessions.slice(-400);
+  if (topic) {
+    const progress = topicProgress(topic.id);
+    progress.practice = true;
+    progress.attempts = Number(progress.attempts || 0) + 1;
+    progress.best = Math.max(Number(progress.best || 0), percent);
+    progress.lastPractice = new Date().toISOString();
+    const quality = percent >= 90 ? 5 : percent >= 75 ? 4 : percent >= 55 ? 3 : 2;
+    sm2Review(topic.id, quality);
+  }
+  state.progress.quizHistory.push({
+    date: new Date().toISOString(),
+    subject: draft.subject,
+    topicId: topic?.id || null,
+    mode: 'fipi',
+    total: solved,
+    correct
+  });
+  if (draft.originSessionId) {
+    const session = (state.plan?.sessions || []).find(item => item.id === draft.originSessionId);
+    if (session && !sessionIsDone(session.id)) completeSessionInternal(session.id, { noActivity: true });
+  }
+  addActivity(minutes, date);
+  saveState();
+  modal = null;
+  fipiDraft = null;
+  render();
+  showToast('Результат сохранён', correct + ' из ' + solved + ' · ' + percent + '%. Тема обновлена, повторение перенесено по SM-2.', 'success');
+}
+
+/* === Повторение и пробники === */
+
+function renderReviewCard() {
+  const due = dueReviewTopics(6);
+  if (!due.length) return '';
+  const total = dueReviewTopics().length;
+  return '' +
+    '<section class="review-card">' +
+      '<div class="review-head"><div><b>Пора повторить · ' + total + '</b><small>Адаптивное повторение само решает, когда вернуть тему. Сначала — самые просроченные.</small></div><button class="btn btn-primary btn-sm" data-action="review-due">' + icon('rotate') + 'Повторить всё</button></div>' +
+      '<div class="review-list">' + due.map(item => (
+        '<div class="review-row"><b>' + escapeHTML(item.topic.title) + '</b><small>' + escapeHTML(SUBJECTS[item.topic.subject].short) + ' · ' + (item.overdueDays ? 'просрочено на ' + item.overdueDays + ' ' + pluralize(item.overdueDays, ['день', 'дня', 'дней']) : 'сегодня') + '</small><button data-action="start-practice" data-topic="' + item.topic.id + '">' + icon('play') + ' Повторить</button></div>'
+      )).join('') + '</div>' +
+    '</section>';
+}
+
+function mockQueueForSubject(subjectId, count) {
+  const target = Math.max(1, Number(count) || 12);
+  const questions = allQuestionsForSubject(subjectId);
+  if (!questions.length) return [];
+  const byTopic = {};
+  questions.forEach(question => {
+    if (!byTopic[question.topicId]) byTopic[question.topicId] = [];
+    byTopic[question.topicId].push(question.id);
+  });
+  const topicIds = shuffle(Object.keys(byTopic)).sort((a, b) => {
+    const bestA = Number(state.progress.topics[a]?.best || 0);
+    const bestB = Number(state.progress.topics[b]?.best || 0);
+    return bestA - bestB;
+  });
+  Object.keys(byTopic).forEach(id => { byTopic[id] = shuffle(byTopic[id]); });
+  const queue = [];
+  let round = 0;
+  while (queue.length < Math.min(target, questions.length) && round < 30) {
+    topicIds.forEach(id => {
+      if (queue.length >= Math.min(target, questions.length)) return;
+      const next = byTopic[id][round];
+      if (next && !queue.includes(next)) queue.push(next);
+    });
+    round += 1;
+  }
+  return queue;
+}
+
+/* === PWA === */
+
+function isStandaloneApp() {
+  return Boolean(
+    window.matchMedia?.('(display-mode: standalone)').matches ||
+    window.navigator.standalone
+  );
+}
+
+function setupPWA() {
+  if (!('serviceWorker' in navigator) || location.protocol === 'file:') return;
+  navigator.serviceWorker.register('sw.js', { scope: './' }).then(registration => {
+    pwaRegistration = registration;
+    registration.update?.();
+  }).catch(() => {});
+  window.addEventListener('beforeinstallprompt', event => {
+    event.preventDefault();
+    pwaInstallPrompt = event;
+    pwaInstallAvailable = true;
+    if (currentUser && view !== 'trainer' && !modal) render();
+  });
+  window.addEventListener('appinstalled', () => {
+    pwaInstallPrompt = null;
+    pwaInstallAvailable = false;
+    showToast('Приложение установлено', '«Фокус ЕГЭ» теперь открывается с рабочего стола.', 'success');
+    render();
+  });
+}
+
+async function promptPWAInstall() {
+  if (pwaInstallPrompt) {
+    const prompt = pwaInstallPrompt;
+    pwaInstallPrompt = null;
+    pwaInstallAvailable = false;
+    prompt.prompt();
+    try {
+      await prompt.userChoice;
+    } catch (error) {}
+    render();
+    return;
+  }
+  showToast('Как установить приложение', 'Chrome и Edge: меню ⋮ → «Установить приложение». Safari на iPhone: «Поделиться» → «На экран Домой».', 'info');
+}
+
+function renderPwaBanner() {
+  if (isStandaloneApp() || !pwaInstallAvailable) return '';
+  return '' +
+    '<div class="pwa-banner">' +
+      '<span class="pwa-ico">' + icon('install') + '</span>' +
+      '<div><b>Установите «Фокус» как приложение</b><small>Открывается с рабочего стола, работает офлайн и выглядит как отдельное приложение.</small></div>' +
+      '<button class="btn btn-primary btn-sm" data-action="pwa-install">' + icon('install') + 'Установить</button>' +
+    '</div>';
 }
 
 function profileSubjects() {
@@ -7641,11 +8582,97 @@ function topicsForSubject(subjectId) {
   return TOPICS.filter(topic => topic.subject === subjectId).sort((a, b) => a.order - b.order);
 }
 
+function defaultSm2() {
+  return { ease: 2.5, interval: 0, reps: 0, lapses: 0, due: '', lastQuality: 0, lastReviewed: '' };
+}
+
 function topicProgress(topicId) {
   if (!state.progress.topics[topicId]) {
-    state.progress.topics[topicId] = { theory: false, practice: false, attempts: 0, best: 0 };
+    state.progress.topics[topicId] = { theory: false, practice: false, attempts: 0, best: 0, sm2: defaultSm2() };
   }
+  if (!state.progress.topics[topicId].sm2) state.progress.topics[topicId].sm2 = defaultSm2();
   return state.progress.topics[topicId];
+}
+
+function sm2For(topicId) {
+  const progress = topicProgress(topicId);
+  if (!progress.sm2) progress.sm2 = defaultSm2();
+  return progress.sm2;
+}
+
+function sm2QualityForAnswer(correct, seconds) {
+  if (!correct) return 2;
+  const time = Number(seconds);
+  if (!Number.isFinite(time) || time <= 0) return 4;
+  if (time <= 12) return 5;
+  if (time <= 35) return 4;
+  return 3;
+}
+
+function sm2Review(topicId, quality) {
+  if (!TOPIC_BY_ID[topicId]) return null;
+  const sm2 = sm2For(topicId);
+  const q = clamp(Math.round(Number(quality) || 0), 0, 5);
+  let ease = sm2.ease + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02));
+  ease = clamp(Math.round(ease * 100) / 100, 1.3, 2.8);
+  let reps;
+  let interval;
+  let lapses = Number(sm2.lapses || 0);
+  if (q < 3) {
+    reps = 0;
+    interval = 1;
+    lapses += 1;
+  } else {
+    reps = Number(sm2.reps || 0) + 1;
+    if (reps === 1) interval = 1;
+    else if (reps === 2) interval = 4;
+    else interval = Math.round(Math.max(1, Number(sm2.interval || 1)) * ease);
+    interval = clamp(interval, 1, 180);
+  }
+  const reviewedAt = new Date();
+  sm2.ease = ease;
+  sm2.interval = interval;
+  sm2.reps = reps;
+  sm2.lapses = lapses;
+  sm2.due = toISO(addDays(reviewedAt, interval));
+  sm2.lastQuality = q;
+  sm2.lastReviewed = reviewedAt.toISOString();
+  return sm2;
+}
+
+function dueReviewTopics(limit) {
+  const today = toISO(new Date());
+  const list = TOPICS.filter(topic => {
+    if (!profileSubjects().includes(topic.subject)) return false;
+    const progress = state.progress.topics[topic.id];
+    if (!progress || (!progress.practice && !progress.attempts)) return false;
+    const due = progress.sm2?.due;
+    return Boolean(due && due <= today);
+  }).map(topic => {
+    const progress = state.progress.topics[topic.id];
+    const due = progress.sm2?.due || today;
+    return {
+      topic,
+      due,
+      overdueDays: Math.max(0, daysBetween(parseISO(today), parseISO(due))),
+      interval: Number(progress.sm2?.interval || 0),
+      ease: Number(progress.sm2?.ease || 2.5)
+    };
+  }).sort((a, b) => a.due.localeCompare(b.due) || b.topic.weight - a.topic.weight || a.topic.order - b.topic.order);
+  return Number(limit) > 0 ? list.slice(0, limit) : list;
+}
+
+function reviewDueLabel(topicId) {
+  const sm2 = state.progress.topics[topicId]?.sm2;
+  if (!sm2?.due) return { text: 'новая', className: '' };
+  const today = toISO(new Date());
+  if (sm2.due < today) {
+    const days = Math.max(1, daysBetween(parseISO(today), parseISO(sm2.due)));
+    return { text: 'просрочено на ' + days + ' ' + pluralize(days, ['день', 'дня', 'дней']), className: 'overdue' };
+  }
+  if (sm2.due === today) return { text: 'повторить сегодня', className: '' };
+  const days = Math.max(1, daysBetween(parseISO(sm2.due), parseISO(today)));
+  return { text: 'через ' + days + ' ' + pluralize(days, ['день', 'дня', 'дней']), className: '' };
 }
 
 function isTopicDone(topicId) {
@@ -7993,7 +9020,8 @@ function ensureDailyQuestion() {
     order: shuffledOptionOrder(picked.question),
     selected: null,
     checked: false,
-    correct: false
+    correct: false,
+    startedAt: new Date().toISOString()
   };
   saveState();
   return state.progress.dailyQuestion;
@@ -8286,7 +9314,9 @@ function planSubjectOrder(profile, date) {
 
 function planStateFor(profile) {
   const result = {};
+  const today = toISO(new Date());
   (profile.subjects || []).forEach(subjectId => {
+    const topics = topicsForSubject(subjectId);
     result[subjectId] = {
       index: 0,
       plannedTheory: new Set(),
@@ -8296,8 +9326,12 @@ function planStateFor(profile) {
       lastDate: null,
       plannedCount: 0,
       lastWeekCursor: 0,
-      topics: topicsForSubject(subjectId)
+      topics
     };
+    topics.forEach(topic => {
+      const due = state.progress.topics[topic.id]?.sm2?.due;
+      if (due) result[subjectId].reviews.push({ topicId: topic.id, due: due < today ? today : due });
+    });
   });
   return result;
 }
@@ -8466,26 +9500,33 @@ function generatePlan(profile) {
     const order = planSubjectOrder(profile, cursor);
     if (!order.length) continue;
     const slots = getSlots(profile, cursor);
-    if (!slots.length) {
-      if ((profile.studyDays || []).map(Number).includes(day) && Number(profile.bufferDay) !== day) noSlotDays += 1;
-      continue;
-    }
     const weekIndex = Math.floor(daysBetween(cursor, start) / 7);
     const lastWeekActive = order.some(subjectId => isLastWeekForSubject(subjectId, cursor, profile));
-    if (profile.miniMocks && !lastWeekActive && cursor.getDay() === 6 && weekIndex > 0 && weekIndex % 2 === 0) {
-      const subjectId = order[0];
-      const mockDuration = Math.min(60, Math.max(sessionMinutes, dailyMinutes));
-      const mockStart = slots[0].start;
-      const mockEnd = minutesToTime(timeToMinutes(mockStart) + mockDuration);
-      const id = dateISO + '-' + subjectId + '-mock';
-      if (!seenIds.has(id)) {
-        seenIds.add(id);
-        result.sessions.push({
-          id, date: dateISO, start: mockStart, end: mockEnd, duration: mockDuration,
-          subject: subjectId, topicId: null, title: 'Мини-пробник · ' + SUBJECTS[subjectId].short,
-          type: 'mock', stage: SESSION_LABELS.mock
-        });
+    if (profile.miniMocks && !lastWeekActive && cursor.getDay() === 6) {
+      const mockPool = order.filter(subjectId => {
+        const examDate = profile.examDates?.[subjectId];
+        return examDate && parseISO(examDate) > cursor;
+      });
+      const subjectId = mockPool.length ? mockPool[weekIndex % mockPool.length] : null;
+      if (subjectId) {
+        const mockDuration = Math.min(90, Math.max(sessionMinutes, dailyMinutes));
+        const preferred = (profile.preferredTimes || [])[0];
+        const mockStart = slots[0]?.start || (/^\d{2}:\d{2}$/.test(String(preferred)) ? preferred : '10:00');
+        const mockEnd = minutesToTime(timeToMinutes(mockStart) + mockDuration);
+        const id = dateISO + '-' + subjectId + '-mock';
+        if (!seenIds.has(id)) {
+          seenIds.add(id);
+          result.sessions.push({
+            id, date: dateISO, start: mockStart, end: mockEnd, duration: mockDuration,
+            subject: subjectId, topicId: null, title: 'Пробник · ' + SUBJECTS[subjectId].short,
+            type: 'mock', stage: SESSION_LABELS.mock
+          });
+        }
+        continue;
       }
+    }
+    if (!slots.length) {
+      if ((profile.studyDays || []).map(Number).includes(day) && Number(profile.bufferDay) !== day) noSlotDays += 1;
       continue;
     }
     const slotsToUse = slots.slice(0, maxSessions);
@@ -8511,10 +9552,13 @@ function generatePlan(profile) {
       });
       if (type === 'theory') plannedTopics.add(topic.id);
       if (type === 'practice' && profile.spacedReview) {
-        planState[picked.subjectId].reviews.push(
-          { topicId: topic.id, due: toISO(addDays(cursor, 3)) },
-          { topicId: topic.id, due: toISO(addDays(cursor, 10)) }
-        );
+        const sm2 = state.progress.topics[topic.id]?.sm2;
+        const ease = Math.max(1.3, Number(sm2?.ease || 2.5));
+        let gap = sm2?.interval ? clamp(Math.round(sm2.interval * 0.6), 1, 21) : 1;
+        for (let reviewIndex = 0; reviewIndex < 3; reviewIndex += 1) {
+          planState[picked.subjectId].reviews.push({ topicId: topic.id, due: toISO(addDays(cursor, gap)) });
+          gap = clamp(Math.max(gap + 2, Math.round(gap * ease)), 2, 120);
+        }
       }
       lastSubject = picked.subjectId;
     }
@@ -8619,7 +9663,11 @@ const ICONS = {
   award: '<circle cx="12" cy="8.5" r="5.5"/><path d="m8.6 13.4-1.1 8 4.5-2.7 4.5 2.7-1.1-8"/>',
   copy: '<rect x="9" y="9" width="12" height="12" rx="2.5"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
   upload: '<path d="M12 21V9M7 14l5-5 5 5"/><path d="M4 5h16"/>',
-  shuffle: '<path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>'
+  shuffle: '<path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="m16.2 16.2 4.3 4.3"/>',
+  cloud: '<path d="M7 18h10a4 4 0 0 0 .4-8A6 6 0 0 0 6 11.2 3.9 3.9 0 0 0 7 18z"/>',
+  install: '<path d="M12 3v11M8 10l4 4 4-4"/><path d="M5 17v3h14v-3"/>',
+  layersPlus: '<path d="m12 2 9 5-9 5-9-5 9-5z"/><path d="m3 12 9 5 9-5M3 17l9 5 9-5"/><path d="M19 3v6M16 6h6"/>'
 };
 
 function icon(name, className) {
@@ -8703,13 +9751,14 @@ function renderShell(content) {
             '<span class="avatar">' + escapeHTML(initials(state.profile?.name).toUpperCase()) + '</span>' +
             '<span><b>' + escapeHTML(state.profile?.name || 'Ученик') + '</b><small>' + subjects.length + ' ' + pluralize(subjects.length, ['трек', 'трека', 'треков']) + ' · ' + targetSum + ' б.</small></span>' +
           '</div>' +
-          '<div class="sidebar-note">План, теория и практика. Данные хранятся на этом устройстве.</div>' +
+          '<div class="sidebar-note">План, теория и практика. Данные можно перенести на другое устройство.</div>' +
         '</div>' +
       '</aside>' +
       '<div class="main-wrap">' +
         '<header class="topbar">' +
           '<div class="topbar-left"><h1>' + pageTitle() + '</h1><span class="topbar-date">' + formatDate(new Date(), { weekday: 'short', day: 'numeric', month: 'long' }) + '</span></div>' +
           '<div class="topbar-right">' +
+            '<button class="search-trigger" data-action="open-search" aria-label="Поиск по курсу" title="Поиск по темам, заданиям и шпаргалкам"><span>' + icon('search') + 'Поиск</span><kbd>Ctrl K</kbd></button>' +
             (nearest ? '<button class="countdown-pill" data-action="nav" data-view="plan"><span class="pulse-dot"></span>До ' + escapeHTML(SUBJECTS[nearest.id].genitive || SUBJECTS[nearest.id].short) + ' <b>' + daysLabel(nearest.days) + '</b></button>' : '') +
             '<div class="streak-pill" title="Серия занятий">' + icon('flame') + '<span>' + streak + ' ' + pluralize(streak, ['день', 'дня', 'дней']) + '</span></div>' +
             '<button class="icon-btn" data-action="toggle-theme" aria-label="' + (currentTheme() === 'dark' ? 'Включить светлую тему' : 'Включить тёмную тему') + '" title="' + (currentTheme() === 'dark' ? 'Светлая тема' : 'Тёмная тема') + '">' + icon(currentTheme() === 'dark' ? 'sun' : 'moon') + '</button>' +
@@ -9411,6 +10460,7 @@ function autoCheckSurprise() {
   trainer.answers[trainer.index] = { qid: question.id, selected: -1, correct: false };
   trainer.selected = -1;
   trainer.checked = true;
+  sm2Review(question.topicId, 2);
   addMistake(question.id, -1);
   saveState();
   render();
@@ -9768,7 +10818,7 @@ function renderDashboard() {
           (focus ? '' +
             '<div class="hero-focus-row">' +
               '<div class="mini-subj" style="' + sessionSubjectStyle(focus.subject) + '">' + focusSubject.icon + '</div>' +
-              '<div style="min-width:0"><b>' + escapeHTML(focusSubject.short) + ': ' + escapeHTML(focusTopic ? focusTopic.title : focus.title) + '</b><small>' + focus.start + '–' + focus.end + ' · ' + focus.stage + '</small></div>' +
+              '<div style="min-width:0"><b>' + escapeHTML(focusSubject.short) + ': ' + escapeHTML(focusTopic ? focusTopic.title : focus.title) + '</b><small>' + (focus.date > today ? formatDateShort(focus.date) + ' · ' : '') + focus.start + '–' + focus.end + ' · ' + focus.stage + '</small></div>' +
             '</div>' +
             '<div class="hero-focus-bottom">' + icon('checkCircle') + 'Один шаг — и серия продолжится</div>'
           : '<div class="hero-focus-row"><div class="mini-subj">' + icon('check') + '</div><div><b>На сегодня всё выполнено</b><small>Можно отдохнуть</small></div></div>') +
@@ -9784,6 +10834,8 @@ function renderDashboard() {
     '</section>' +
     renderCountdownCards() +
     '<div class="stat-grid" style="margin-top:16px">' + stats + '</div>' +
+    renderReviewCard() +
+    renderPwaBanner() +
     '<div style="margin-top:16px">' + renderTargetCard() + '</div>' +
     '<div class="dash-grid" style="margin-top:16px">' + renderQuickActions() + renderMicroCard() + '</div>' +
     '<div class="motivation-grid">' + renderDailyQuestionCard() + renderAchievementTeaser() + '</div>' +
@@ -10048,13 +11100,14 @@ function renderSubjects() {
 function renderSubjectDetail(subjectId) {
   const subject = SUBJECTS[subjectId];
   const topics = topicsForSubject(subjectId);
+  const visibleTopics = topics.filter(topicFilterMatches);
   const done = topics.filter(topic => isTopicDone(topic.id)).length;
   const percent = topics.length ? Math.round(done / topics.length * 100) : 0;
   const target = state.profile.targets?.[subjectId] || 80;
   const level = LEVEL_LABEL[state.profile.levels?.[subjectId] || 'basic'];
   const isEssay = Boolean(subject.isEssay);
   const parts = [1, 2].map(part => {
-    const partTopics = topics.filter(topic => topic.part === part);
+    const partTopics = visibleTopics.filter(topic => topic.part === part);
     if (!partTopics.length) return '';
     return '' +
       '<section class="part-block">' +
@@ -10068,6 +11121,8 @@ function renderSubjectDetail(subjectId) {
           const topicDone = isTopicDone(topic.id);
           const best = Number(progress.best || 0);
           const scoreClass = best >= 80 ? ' good' : best > 0 ? ' low' : '';
+          const due = reviewDueLabel(topic.id);
+          const showDue = (progress.practice || Number(progress.attempts || 0) > 0) && due.text !== 'новая';
           return '' +
             '<div class="topic-row' + (topicDone ? ' done' : '') + '">' +
               '<span class="topic-num">' + (topicDone ? icon('check') : topic.order) + '</span>' +
@@ -10078,6 +11133,7 @@ function renderSubjectDetail(subjectId) {
                   '<span class="weight">вес ' + topic.weight + '/5</span><span>·</span>' +
                   '<span class="status-dot' + (topicDone ? ' done' : '') + '"></span>' +
                   '<span>' + (topicDone ? 'освоено' : progress.theory ? 'теория изучена' : 'не начато') + '</span>' +
+                  (showDue ? '<span class="topic-due ' + due.className + '">' + icon('clock') + due.text + '</span>' : '') +
                 '</div>' +
               '</div>' +
               '<span class="topic-score' + scoreClass + '">' + (Number(progress.attempts || 0) ? best + '%' : '—') + '</span>' +
@@ -10114,7 +11170,8 @@ function renderSubjectDetail(subjectId) {
     '<div style="margin-top:16px">' + renderPseCard(subjectId) + '</div>' +
     '<div style="margin-top:16px">' + renderDependencyCard(subjectId) + '</div>' +
     '<div class="subject-toolbar"><div><span class="badge brand">' + (subject.part === 2 ? 'Часть 2' : 'Маршрут по темам') + '</span><span class="small muted" style="margin-left:8px">Сначала теория и алгоритм, затем практика</span></div><button class="section-link" data-action="nav" data-view="plan">Ближайшие занятия ' + icon('arrowRight') + '</button></div>' +
-    parts +
+    renderTopicFilterChips(topics) +
+    (visibleTopics.length ? parts : '<div class="card pad empty-state" style="margin-top:12px"><div class="empty-ico">' + icon('checkCircle') + '</div><b>Под этот фильтр тем нет</b><small>Это хороший знак: возможно, всё уже освоено. Переключите фильтр, чтобы увидеть остальные темы.</small><button class="btn btn-secondary btn-sm" data-action="topic-filter" data-filter="all">Показать все темы</button></div>') +
     '<div class="notice" style="margin-top:6px">' + icon('lightbulb') + '<div><b>Как учиться по этой странице.</b> Откройте тему, разберите алгоритм, затем сразу закрепите короткой практикой. После 2–3 ошибок вернитесь в теорию — это нормальный цикл, а не провал.</div></div>';
 }
 
@@ -10189,7 +11246,7 @@ function startTrainer(config) {
   let queue = cfg.questionIds ? [...cfg.questionIds] : [];
   if (!queue.length) {
     if (cfg.topicId) queue = trainerQueueForTopic(cfg.topicId);
-    else if (cfg.subject && cfg.mode === 'mock') queue = allQuestionsForSubject(cfg.subject).slice(0, 8);
+    else if (cfg.subject && cfg.mode === 'mock') queue = mockQueueForSubject(cfg.subject, 12);
     else if (cfg.subject) queue = allQuestionsForSubject(cfg.subject).slice(0, 8);
     else queue = state.profile.subjects.flatMap(id => allQuestionsForSubject(id)).slice(0, 10);
   }
@@ -10212,6 +11269,7 @@ function startTrainer(config) {
     checked: false,
     answers: [],
     optionOrders: Object.fromEntries(queue.map(id => [id, shuffledOptionOrder(QUESTION_BY_ID[id])])),
+    questionStartedAt: Date.now(),
     finished: false,
     startedAt: new Date().toISOString()
   };
@@ -10226,6 +11284,7 @@ function renderTrainerLobby() {
   const subjectId = trainerSubject;
   const subject = subjectId ? SUBJECTS[subjectId] : null;
   const topics = subjectId ? topicsForSubject(subjectId) : [];
+  const visibleTopics = topics.filter(topicFilterMatches);
   const mistakes = getMistakeEntries().length;
   return '' +
     '<div class="trainer-head">' +
@@ -10247,15 +11306,18 @@ function renderTrainerLobby() {
         '<button class="btn btn-secondary btn-sm" data-action="start-subject-practice" data-subject="' + subject.id + '">' + icon('play') + 'Случайные 8</button>' +
       '</div>' +
       '<div class="practice-toolbar"><p>Выберите тему или начните тренировку по всему предмету.</p><div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">' + fipiSubjectLink(subject.id, 'Официальный банк ФИПИ', 'btn btn-ghost btn-sm') + '<span class="tag">' + topics.length + ' ' + pluralize(topics.length, ['тема', 'темы', 'тем']) + '</span></div></div>' +
-      '<div class="practice-topics">' + topics.map(topic => {
+      renderTopicFilterChips(topics) +
+      (visibleTopics.length ? '<div class="practice-topics">' + visibleTopics.map(topic => {
         const progress = state.progress.topics[topic.id] || {};
+        const due = reviewDueLabel(topic.id);
+        const showDue = (progress.practice || Number(progress.attempts || 0) > 0) && due.text !== 'новая';
         return '' +
           '<button class="practice-topic" data-action="start-practice" data-topic="' + topic.id + '">' +
             '<span class="subject-mark">' + (Number(progress.attempts || 0) ? Math.round(Number(progress.best || 0)) + '%' : icon('play')) + '</span>' +
-            '<span class="practice-topic-info"><b>' + escapeHTML(topic.title) + '</b><small>' + (subject.isEssay ? 'Этап' : 'Часть ' + topic.part) + ' · ' + topic.questions.length + ' ' + pluralize(topic.questions.length, ['карточка', 'карточки', 'карточек']) + ' · вес ' + topic.weight + '</small></span>' +
+            '<span class="practice-topic-info"><b>' + escapeHTML(topic.title) + '</b><small>' + (subject.isEssay ? 'Этап' : 'Часть ' + topic.part) + ' · ' + topic.questions.length + ' ' + pluralize(topic.questions.length, ['карточка', 'карточки', 'карточек']) + ' · вес ' + topic.weight + (showDue ? ' · ' + due.text : '') + '</small></span>' +
             '<span class="arrow">' + icon('arrowRight') + '</span>' +
           '</button>';
-      }).join('') + '</div>'
+      }).join('') + '</div>' : '<div class="card pad empty-state" style="margin-top:12px"><div class="empty-ico">' + icon('checkCircle') + '</div><b>Под этот фильтр тем нет</b><small>Переключите фильтр или начните смешанную тренировку.</small><button class="btn btn-secondary btn-sm" data-action="topic-filter" data-filter="all">Показать все темы</button></div>')
     : '<div class="empty-state"><b>Нет выбранных предметов</b><small>Измените профиль, чтобы выбрать предметы.</small></div>');
 }
 
@@ -10274,7 +11336,7 @@ function renderQuiz() {
   return '' +
     '<div class="quiz-shell">' +
       '<div class="quiz-top">' +
-        '<div class="quiz-top-left"><button class="btn btn-ghost btn-sm" data-action="trainer-exit">' + icon('arrowLeft') + 'Выйти</button><span class="tag">' + subject.short + '</span><span class="tag">' + (trainer.mode === 'surprise' ? 'Внезапный экзамен' : trainer.mode === 'micro' ? 'Микро-сессия' : trainer.mode === 'mock' ? 'Пробник' : trainer.mode === 'mistakes' ? 'Работа над ошибками' : topic ? 'Тема: ' + topic.title : 'Смешанная') + '</span></div>' +
+        '<div class="quiz-top-left"><button class="btn btn-ghost btn-sm" data-action="trainer-exit">' + icon('arrowLeft') + 'Выйти</button><span class="tag">' + subject.short + '</span><span class="tag">' + (trainer.mode === 'surprise' ? 'Внезапный экзамен' : trainer.mode === 'micro' ? 'Микро-сессия' : trainer.mode === 'mock' ? 'Пробник' : trainer.mode === 'mistakes' ? 'Работа над ошибками' : trainer.mode === 'review' ? 'Повторение' : trainer.mode === 'fipi' ? 'ФИПИ' : topic ? 'Тема: ' + topic.title : 'Смешанная') + '</span></div>' +
         '<div style="display:flex;align-items:center;gap:8px">' +
           (trainer.mode === 'surprise' ? '<span class="tag brand" data-surprise-timer>' + icon('clock') + '<b>' + surpriseTimeLeft + '</b>&nbsp;с</span>' : '') +
           '<span class="quiz-progress-text">' + (trainer.index + 1) + ' / ' + trainer.queue.length + '</span>' +
@@ -10332,7 +11394,7 @@ function renderTrainerResult() {
       '<div class="result-stats">' +
         '<div class="result-stat"><b>' + correct + ' / ' + total + '</b><small>верно</small></div>' +
         '<div class="result-stat"><b>' + (total - correct) + '</b><small>в журнал ошибок</small></div>' +
-        '<div class="result-stat"><b>' + (topic ? topic.title : trainer.mode === 'surprise' ? 'Внезапный экзамен' : trainer.mode === 'micro' ? 'Микро-сессия' : trainer.mode === 'mock' ? 'Пробник' : 'Смешанная') + '</b><small>тренировка</small></div>' +
+        '<div class="result-stat"><b>' + (topic ? topic.title : trainer.mode === 'surprise' ? 'Внезапный экзамен' : trainer.mode === 'micro' ? 'Микро-сессия' : trainer.mode === 'mock' ? 'Пробник' : trainer.mode === 'review' ? 'Повторение' : trainer.mode === 'fipi' ? 'ФИПИ' : 'Смешанная') + '</b><small>тренировка</small></div>' +
       '</div>' +
       '<div class="encourage-line" style="justify-content:center;text-align:left;max-width:430px;margin:12px auto 0">' + icon('lightbulb') + '<span>' + escapeHTML(resultEncouragement(percent)) + '</span></div>' +
       '<div class="result-actions">' +
@@ -10803,32 +11865,88 @@ function renderGroup() {
 
 function renderFipi() {
   const subjects = profileSubjects().length ? profileSubjects() : SUBJECT_ORDER;
+  const stats = fipiStats();
+  const sessions = (state.progress.fipiSessions || []).slice().reverse().slice(0, 6);
   return '' +
-    '<div class="page-head"><div><h1>Открытый банк ФИПИ</h1><p>Официальные задания живут на сайте ФИПИ. Мы не копируем их, а помогаем открыть первоисточник и встроить работу с ним в план.</p></div><div class="page-actions"><button class="btn btn-secondary btn-sm" data-action="nav" data-view="trainer">' + icon('target') + 'К тренажёру</button></div></div>' +
+    '<div class="page-head"><div><h1>Открытый банк ФИПИ</h1><p>Официальные задания живут на сайте ФИПИ. Мы не копируем их, а помогаем открыть первоисточник и встроить работу с ним в план.</p></div><div class="page-actions"><button class="btn btn-ghost btn-sm" data-action="nav" data-view="trainer">' + icon('target') + 'К тренажёру</button><button class="btn btn-primary btn-sm" data-action="open-fipi-session">' + icon('check') + 'Отметить сессию</button></div></div>' +
     '<section class="fipi-hero">' +
-      '<div><span class="eyebrow" style="color:var(--brand)">Первоисточник</span><h1>Банк ФИПИ — без перепечаток</h1><p>Карточки внутри «Фокуса» — авторские аналоги по темам кодификатора. Официальные формулировки, ответы и критерии открываются только на сайте ФИПИ в новой вкладке.</p><div class="fipi-hero-actions" style="margin-top:14px">' + externalLink(FIPI_BANK_ROOT, 'Открыть банк ФИПИ', 'btn btn-primary btn-sm') + externalLink('https://fipi.ru/', 'Сайт ФИПИ', 'btn btn-secondary btn-sm') + '</div></div>' +
-      '<div class="ach-hero-stats"><div class="ach-hero-stat"><b>' + subjects.length + '</b><small>предметов</small></div><div class="ach-hero-stat"><b>100%</b><small>ссылок на ФИПИ</small></div><div class="ach-hero-stat"><b>0</b><small>скопированных заданий</small></div></div>' +
+      '<div><span class="eyebrow" style="color:var(--brand)">Первоисточник</span><h1>Банк ФИПИ — без перепечаток</h1><p>Карточки внутри «Фокуса» — авторские аналоги по темам кодификатора. Официальные формулировки, ответы и критерии открываются только на сайте ФИПИ в новой вкладке.</p><div class="fipi-hero-actions" style="margin-top:14px">' + externalLink(FIPI_BANK_ROOT, 'Открыть банк ФИПИ', 'btn btn-primary btn-sm') + '<button class="btn btn-secondary btn-sm" data-action="open-fipi-session">' + icon('check') + 'Внести результат</button></div></div>' +
+      '<div class="ach-hero-stats"><div class="ach-hero-stat"><b>' + stats.sessions + '</b><small>сессий с ФИПИ</small></div><div class="ach-hero-stat"><b>' + stats.solved + '</b><small>заданий решено</small></div><div class="ach-hero-stat"><b>' + (stats.solved ? stats.accuracy + '%' : '—') + '</b><small>точность</small></div></div>' +
+    '</section>' +
+    '<section class="card settings-section" style="margin-top:16px">' +
+      '<div class="card-head" style="margin-bottom:0"><div><h2>Журнал работы с банком</h2><p>Решите задания на сайте ФИПИ, затем внесите результат. Он попадёт в прогресс темы и в адаптивное повторение.</p></div><button class="btn btn-soft btn-sm" data-action="open-fipi-session">' + icon('layersPlus') + 'Добавить</button></div>' +
+      (sessions.length
+        ? '<div class="fipi-session-list">' + sessions.map(entry => {
+          const topic = entry.topicId ? TOPIC_BY_ID[entry.topicId] : null;
+          const percent = entry.solved ? Math.round(entry.correct / entry.solved * 100) : 0;
+          return '<div class="fipi-session-row"><b>' + escapeHTML(topic?.title || SUBJECTS[entry.subject].name) + '</b><span>' + escapeHTML(SUBJECTS[entry.subject].short) + ' · ' + formatDateShort(entry.date) + '</span><span class="' + (percent >= 75 ? 'ok' : '') + '">' + entry.correct + ' / ' + entry.solved + ' · ' + percent + '%</span></div>';
+        }).join('') + '</div>'
+        : '<div class="notice" style="margin-top:12px">' + icon('info') + '<div>Пока нет отмеченных сессий. Откройте банк ФИПИ, решите 3–5 заданий и нажмите «Отметить сессию» — прогресс темы обновится без перепечатки официальных заданий.</div></div>') +
     '</section>' +
     '<div class="fipi-grid">' + subjects.map(subjectId => {
       const subject = SUBJECTS[subjectId];
       const topics = topicsForSubject(subjectId);
+      const shown = topics.slice(0, 5);
       return '' +
         '<section class="card fipi-subject" style="--subj-color:' + subject.color + '">' +
           '<div class="fipi-subject-head"><span class="subject-mark">' + subject.icon + '</span><div style="min-width:0"><b>' + escapeHTML(subject.name) + '</b><small>' + escapeHTML(FIPI_BANK[subjectId]?.label || subject.taskLabel) + '</small></div>' + fipiSubjectLink(subjectId, 'Открыть', 'btn btn-soft btn-sm') + '</div>' +
-          '<div class="fipi-topic-list">' + topics.map(topic => externalLink(fipiSubjectUrl(subjectId), '<b>' + escapeHTML(topic.title) + '</b><small>' + escapeHTML(topic.examTasks) + '</small>', 'fipi-topic-row')).join('') + '</div>' +
+          '<div class="fipi-topic-list">' + shown.map(topic => externalLink(fipiSubjectUrl(subjectId), '<b>' + escapeHTML(topic.title) + '</b><small>' + escapeHTML(topic.examTasks) + '</small>', 'fipi-topic-row')).join('') + '</div>' +
+          '<div class="settings-actions" style="margin-top:10px"><button class="btn btn-secondary btn-sm" data-action="open-fipi-session" data-subject="' + subjectId + '">' + icon('check') + 'Отметить результат</button><span class="small muted">' + (topics.length > shown.length ? 'ещё ' + (topics.length - shown.length) + ' тем — в банке' : 'все темы в банке') + '</span></div>' +
         '</section>';
     }).join('') + '</div>' +
     '<div class="fipi-steps">' +
       '<div class="fipi-step"><span class="fipi-step-num">1</span><b>Откройте банк</b><small>Выберите предмет и раздел по кодификатору.</small></div>' +
       '<div class="fipi-step"><span class="fipi-step-num">2</span><b>Решите 3–5 заданий</b><small>Сначала без подсказок, затем сверьте ответ.</small></div>' +
-      '<div class="fipi-step"><span class="fipi-step-num">3</span><b>Вернитесь в «Фокус»</b><small>Отметьте практику или добавьте ошибку в журнал.</small></div>' +
-      '<div class="fipi-step"><span class="fipi-step-num">4</span><b>Повторите через 3 дня</b><small>Интервальное повторение закрепит материал.</small></div>' +
+      '<div class="fipi-step"><span class="fipi-step-num">3</span><b>Внесите результат</b><small>Укажите тему, сколько решено и сколько верно.</small></div>' +
+      '<div class="fipi-step"><span class="fipi-step-num">4</span><b>Дождитесь повторения</b><small>SM-2 вернёт тему в нужный день — без фиксированных 3 и 10 дней.</small></div>' +
     '</div>' +
     '<div class="notice" style="margin-top:16px">' + icon('lock') + '<div><b>Правовая граница.</b> Приложение не перепубликует задания ФИПИ и не выдаёт свои карточки за официальные. Ссылки ведут на официальные страницы; условия использования материалов определяет ФИПИ.</div></div>';
 }
 
 function settingsDayChips() {
   return WEEKDAYS.map(day => '<button class="day-chip' + (settingsDraft.studyDays.includes(day.n) ? ' active' : '') + '" data-action="settings-day" data-day="' + day.n + '" title="' + day.full + '">' + day.short + '</button>').join('');
+}
+
+function renderSyncSettingsCard() {
+  const status = syncMessage || (syncConfig.lastSyncAt
+    ? { type: 'ok', text: 'Последняя синхронизация: ' + (Number.isFinite(new Date(syncConfig.lastSyncAt).getTime()) ? formatDateFull(new Date(syncConfig.lastSyncAt)) : syncConfig.lastSyncAt) + (syncConfig.lastDirection === 'upload' ? ' · выгрузка' : syncConfig.lastDirection === 'download' ? ' · загрузка' : '') + '.' }
+    : { type: '', text: 'Синхронизация ещё не настроена. Придумайте код и пароль — они понадобятся на втором устройстве.' });
+  return '' +
+    '<section class="card settings-section">' +
+      '<h2>Синхронизация между устройствами</h2><p>Зашифрованная копия аккаунта и прогресса на вашем сервере. Код и пароль — единственный ключ к данным.</p>' +
+      '<div class="sync-grid">' +
+        '<div class="sync-field"><label>Код синхронизации</label><input type="text" data-sync-field="code" value="' + escapeHTML(syncDraft.code) + '" placeholder="например, focus-2027" autocomplete="off"></div>' +
+        '<div class="sync-field"><label>Пароль синхронизации</label><input type="password" data-sync-field="passphrase" value="" placeholder="минимум 8 символов" autocomplete="new-password"></div>' +
+        '<div class="sync-field" style="grid-column:1/-1"><label>Адрес сервера</label><input type="url" data-sync-field="server" value="' + escapeHTML(syncDraft.server) + '" placeholder="https://example.com/api/sync" autocomplete="off"></div>' +
+      '</div>' +
+      '<div class="sync-status ' + status.type + '">' + icon(status.type === 'ok' ? 'checkCircle' : status.type === 'err' ? 'alert' : status.type === 'warn' ? 'alert' : 'cloud') + '<div>' + escapeHTML(status.text) + '</div></div>' +
+      '<div class="sync-actions">' +
+        '<button class="btn btn-primary btn-sm" data-action="sync-upload"' + (syncBusy ? ' disabled' : '') + '>' + icon('upload') + (syncBusy ? 'Работаем…' : 'Выгрузить') + '</button>' +
+        '<button class="btn btn-secondary btn-sm" data-action="sync-download"' + (syncBusy ? ' disabled' : '') + '>' + icon('download') + 'Забрать' + '</button>' +
+        '<button class="btn btn-ghost btn-sm" data-action="sync-save">' + icon('check') + 'Сохранить код</button>' +
+        (syncConfig.code ? '<button class="btn btn-ghost btn-sm" data-action="sync-forget">Забыть код</button>' : '') +
+      '</div>' +
+      '<div class="sync-note">Сервер синхронизации запускается вместе с приложением (<code>start-fokus.bat</code>). Для второго устройства откройте тот же адрес и нажмите «Забрать». Данные шифруются в браузере: сервер хранит только зашифрованный файл. Если компьютер-сервер выключен, синхронизация недоступна.</div>' +
+    '</section>';
+}
+
+function renderPwaSettingsCard() {
+  const standalone = isStandaloneApp();
+  const supported = 'serviceWorker' in navigator && location.protocol !== 'file:';
+  const status = standalone
+    ? 'Приложение открыто в отдельном окне.'
+    : pwaInstallAvailable
+      ? 'Браузер готов установить приложение.'
+      : supported
+        ? 'Откройте меню браузера и выберите «Установить приложение» (в Safari — «На экран Домой»).'
+        : 'Установка доступна только по HTTP(S), не из файла.';
+  return '' +
+    '<section class="card settings-section">' +
+      '<h2>Приложение и офлайн-режим</h2><p>«Фокус» можно установить на компьютер или телефон. Интерфейс и данные откроются даже без сети.</p>' +
+      '<div class="sync-status ' + (standalone ? 'ok' : '') + '">' + icon(standalone ? 'checkCircle' : 'install') + '<div><b>' + (standalone ? 'Установлено' : 'Установка') + '</b><br>' + escapeHTML(status) + '</div></div>' +
+      '<div class="sync-actions">' + (standalone ? '' : '<button class="btn btn-primary btn-sm" data-action="pwa-install">' + icon('install') + 'Установить приложение</button>') + '<button class="btn btn-ghost btn-sm" data-action="pwa-help">Как это работает</button></div>' +
+      '<div class="sync-note">Service worker кэширует оболочку приложения. Учебные данные хранятся в localStorage и не отправляются в сеть без вашей команды синхронизации.</div>' +
+    '</section>';
 }
 
 function renderSettings() {
@@ -10855,8 +11973,8 @@ function renderSettings() {
             '<div class="full"><label class="form-label">Дни репетитора</label><div class="day-chips">' + WEEKDAYS.map(day => '<button class="day-chip' + (settingsDraft.tutorDays.includes(day.n) ? ' active' : '') + '" data-action="settings-tutor-day" data-day="' + day.n + '" title="' + day.full + '">' + day.short + '</button>').join('') + '</div></div>' +
             '<div><label class="form-label">Время репетитора</label><input class="text-input" type="time" value="' + settingsDraft.tutorTime + '" data-settings-field="tutorTime"></div>' +
             '<div><label class="form-label">Буферный день</label><select class="select-input" data-settings-field="bufferDay">' + WEEKDAYS.map(day => '<option value="' + day.n + '"' + (Number(settingsDraft.bufferDay) === day.n ? ' selected' : '') + '>' + day.full + '</option>').join('') + '</select></div>' +
-            '<div class="full"><div class="settings-row"><div><b>Мини-пробники по выходным</b><small>Раз в две недели — короткий пробник на 8 заданий.</small></div><button class="toggle' + (settingsDraft.miniMocks ? ' on' : '') + '" data-action="settings-toggle" data-field="miniMocks" aria-label="Мини-пробники"></button></div></div>' +
-            '<div class="full"><div class="settings-row"><div><b>Интервальное повторение</b><small>Возвращать темы через 3 и 10 дней после практики.</small></div><button class="toggle' + (settingsDraft.spacedReview ? ' on' : '') + '" data-action="settings-toggle" data-field="spacedReview" aria-label="Интервальное повторение"></button></div></div>' +
+            '<div class="full"><div class="settings-row"><div><b>Пробники по субботам</b><small>Каждую субботу — пробник на 12 заданий с ротацией предметов.</small></div><button class="toggle' + (settingsDraft.miniMocks ? ' on' : '') + '" data-action="settings-toggle" data-field="miniMocks" aria-label="Пробники по субботам"></button></div></div>' +
+            '<div class="full"><div class="settings-row"><div><b>Адаптивное повторение SM-2</b><small>Легко ответили — интервал растёт, тяжело — тема вернётся быстрее.</small></div><button class="toggle' + (settingsDraft.spacedReview ? ' on' : '') + '" data-action="settings-toggle" data-field="spacedReview" aria-label="Адаптивное повторение"></button></div></div>' +
           '</div>' +
           '<div class="settings-actions"><button class="btn btn-primary btn-sm" data-action="settings-save">' + icon('check') + 'Сохранить и пересобрать</button><button class="btn btn-ghost btn-sm" data-action="settings-cancel">Сбросить изменения</button></div>' +
         '</section>' +
@@ -10871,13 +11989,15 @@ function renderSettings() {
       '</div>' +
       '<div>' +
         '<section class="card settings-section">' +
-          '<h2>Аккаунт</h2><p>Личный профиль на этом устройстве.</p>' +
+          '<h2>Аккаунт</h2><p>Личный профиль и прогресс подготовки.</p>' +
           '<div class="account-card-head"><span class="avatar">' + escapeHTML(initials(currentUser?.name || profile.name).toUpperCase()) + '</span><span class="account-identity"><b>' + escapeHTML(currentUser?.name || profile.name || 'Ученик') + '</b><small>' + escapeHTML(currentUser?.email || '') + '</small></span><span class="badge mint">Вход выполнен</span></div>' +
           '<div class="profile-line"><span>Аккаунт создан</span><b>' + (currentUser?.createdAt ? formatDateFull(new Date(currentUser.createdAt)) : '—') + '</b></div>' +
           '<div class="profile-line"><span>Последний вход</span><b>' + (currentUser?.lastLoginAt ? formatDateFull(new Date(currentUser.lastLoginAt)) : 'Сейчас') + '</b></div>' +
           '<div class="settings-actions"><button class="btn btn-secondary btn-sm" data-action="logout">' + icon('logout') + 'Выйти из аккаунта</button></div>' +
-          '<div class="mvp-note">Пароль хранится в виде хеша только в этом браузере. Аккаунт не синхронизируется между устройствами.</div>' +
+          '<div class="mvp-note">Пароль хранится в виде соль+PBKDF2-хеша. Для переноса аккаунта на другое устройство используйте синхронизацию ниже.</div>' +
         '</section>' +
+        renderSyncSettingsCard() +
+        renderPwaSettingsCard() +
         '<section class="card settings-section">' +
           '<h2>Внешний вид</h2><p>Тема применяется сразу и запоминается на этом устройстве.</p>' +
           '<div class="theme-options">' +
@@ -10904,7 +12024,7 @@ function renderSettings() {
           '<h2>Данные и перенос</h2><p>Прогресс хранится в этом браузере. Резервная копия помогает пережить очистку данных и перейти на другое устройство.</p>' +
           '<div class="settings-actions"><button class="btn btn-secondary btn-sm" data-action="export-json">' + icon('download') + 'Скачать резервную копию</button><button class="btn btn-secondary btn-sm" data-action="import-json">' + icon('upload') + 'Загрузить JSON</button><button class="btn btn-ghost btn-sm" data-action="export-ics">' + icon('calendar') + 'Экспорт в календарь</button></div>' +
           '<input type="file" accept="application/json,.json" data-import-json style="display:none">' +
-          '<div class="mvp-note">Перенос между устройствами в MVP: скачайте JSON на первом устройстве, загрузите его на втором. Автоматическая синхронизация появится после подключения бэкенда — маршрут API уже предусмотрен.</div>' +
+          '<div class="mvp-note">JSON-копия — резервный способ. Основной перенос между устройствами — «Синхронизация» выше: она шифрует аккаунт и прогресс и передаёт их через ваш сервер.</div>' +
         '</section>' +
         '<section class="card settings-section danger-zone">' +
           '<h2>Сбросить всё</h2><p>Удалить профиль, план, прогресс и ошибки. Это действие нельзя отменить.</p>' +
@@ -11043,6 +12163,8 @@ function renderModalRoot() {
   if (!modal) return '';
   let content = '';
   if (modal.type === 'theory') content = renderTheoryModal(modal.topicId);
+  else if (modal.type === 'search') content = renderSearchModal();
+  else if (modal.type === 'fipi-session') content = renderFipiSessionModal();
   else if (modal.type === 'replan') content = renderReplanModal();
   else if (modal.type === 'reset') content = renderResetModal();
   else if (modal.type === 'clear-mistakes') content = renderClearMistakesModal();
@@ -11506,8 +12628,8 @@ function renderObStepRhythm() {
       '<div class="full"><label class="form-label">Длина одного занятия</label><div class="seg-chips">' + [25, 30, 45, 60].map(value => '<button class="seg-chip' + (Number(d.sessionMinutes) === value ? ' active' : '') + '" data-action="ob-session" data-minutes="' + value + '">' + value + ' мин</button>').join('') + '</div></div>' +
     '</div>' +
     '<div class="week-load-preview"><div><b>Примерно ' + formatMinutes(weekly) + ' в неделю</b><small class="form-hint" style="margin-top:2px;display:block">' + Math.max(1, Math.floor(d.dailyMinutes / d.sessionMinutes)) + ' ' + pluralize(Math.max(1, Math.floor(d.dailyMinutes / d.sessionMinutes)), ['занятие', 'занятия', 'занятий']) + ' в учебный день</small></div><div class="week-load-dots">' + Array.from({ length: 7 }, (_, index) => '<span class="week-load-dot' + (d.studyDays.includes(index + 1) ? ' on' : '') + '" title="' + WEEKDAYS[index].full + '"></span>').join('') + '</div></div>' +
-    '<div class="settings-row" style="margin-top:18px"><div><b>Мини-пробники по субботам</b><small>Раз в две недели — короткая проверка темпа на 8 заданий.</small></div><button class="toggle' + (d.miniMocks ? ' on' : '') + '" data-action="ob-toggle" data-field="miniMocks" aria-label="Мини-пробники"></button></div>' +
-    '<div class="settings-row"><div><b>Интервальное повторение</b><small>Темы будут возвращаться через 3 и 10 дней после практики.</small></div><button class="toggle' + (d.spacedReview ? ' on' : '') + '" data-action="ob-toggle" data-field="spacedReview" aria-label="Повторение"></button></div>';
+    '<div class="settings-row" style="margin-top:18px"><div><b>Пробники по субботам</b><small>Каждую субботу — 12 заданий с ротацией предметов и проверкой темпа.</small></div><button class="toggle' + (d.miniMocks ? ' on' : '') + '" data-action="ob-toggle" data-field="miniMocks" aria-label="Пробники по субботам"></button></div>' +
+    '<div class="settings-row"><div><b>Адаптивное повторение</b><small>SM-2 сам выбирает интервал: легко — дальше, тяжело — быстрее.</small></div><button class="toggle' + (d.spacedReview ? ' on' : '') + '" data-action="ob-toggle" data-field="spacedReview" aria-label="Повторение"></button></div>';
 }
 
 function renderObStepConstraints() {
@@ -11732,6 +12854,20 @@ function completeOnboarding() {
   render();
 }
 
+function renderAuthSyncPanel() {
+  const status = syncMessage || { type: '', text: 'Введите код и пароль, которые задали на первом устройстве. После загрузки войдите с прежним email и паролем.' };
+  return '' +
+    '<div class="auth-sync-panel">' +
+      '<div class="sync-grid">' +
+        '<div class="sync-field"><label>Код синхронизации</label><input type="text" data-sync-field="code" value="' + escapeHTML(syncDraft.code) + '" placeholder="focus-2027" autocomplete="off"></div>' +
+        '<div class="sync-field"><label>Пароль синхронизации</label><input type="password" data-sync-field="passphrase" value="" placeholder="минимум 8 символов" autocomplete="current-password"></div>' +
+        '<div class="sync-field" style="grid-column:1/-1"><label>Адрес сервера</label><input type="url" data-sync-field="server" value="' + escapeHTML(syncDraft.server) + '" placeholder="https://example.com/api/sync"></div>' +
+      '</div>' +
+      '<div class="sync-status ' + status.type + '">' + icon(status.type === 'ok' ? 'checkCircle' : status.type === 'err' ? 'alert' : 'cloud') + '<div>' + escapeHTML(status.text) + '</div></div>' +
+      '<div class="sync-actions"><button class="btn btn-primary btn-sm" data-action="sync-download"' + (syncBusy ? ' disabled' : '') + '>' + icon('download') + (syncBusy ? 'Загружаем…' : 'Забрать аккаунт') + '</button></div>' +
+    '</div>';
+}
+
 function renderAuth() {
   const login = authMode === 'login';
   const accounts = readAccounts();
@@ -11745,14 +12881,14 @@ function renderAuth() {
         '<div class="auth-aside-inner">' +
           '<span class="eyebrow">Личный кабинет</span>' +
           '<h1>Твой план.<br><span>Твой прогресс.</span></h1>' +
-          '<p>Возвращайся к своему маршруту с любого экрана: темы, практика, ошибки и серия занятий сохраняются в аккаунте на этом устройстве.</p>' +
+          '<p>Возвращайся к своему маршруту с любого экрана: темы, практика, ошибки и серия занятий сохраняются в аккаунте. При желании перенесите его на другое устройство.</p>' +
           '<div class="auth-bullets">' +
             '<div class="auth-bullet"><span class="auth-bullet-ico">' + icon('target') + '</span><span><b>Персональный маршрут</b><small>План под предметы, даты и твой ритм</small></span></div>' +
             '<div class="auth-bullet"><span class="auth-bullet-ico">' + icon('chart') + '</span><span><b>Прогресс не теряется</b><small>Теория, практика и ошибки привязаны к аккаунту</small></span></div>' +
-            '<div class="auth-bullet"><span class="auth-bullet-ico">' + icon('lock') + '</span><span><b>Данные только здесь</b><small>Без сервера и передачи пароля</small></span></div>' +
+            '<div class="auth-bullet"><span class="auth-bullet-ico">' + icon('cloud') + '</span><span><b>Перенос по желанию</b><small>Локально или через зашифрованную синхронизацию</small></span></div>' +
           '</div>' +
         '</div>' +
-        '<div class="auth-aside-foot">' + icon('lock') + 'Локальный аккаунт · данные хранятся в этом браузере</div>' +
+        '<div class="auth-aside-foot">' + icon('lock') + 'Аккаунт · локально или зашифрованная синхронизация</div>' +
       '</aside>' +
       '<main class="auth-main">' +
         '<div class="auth-top">' +
@@ -11774,7 +12910,9 @@ function renderAuth() {
             '<button class="btn btn-primary btn-lg btn-block auth-submit" type="submit"' + (authBusy ? ' disabled' : '') + '>' + icon(login ? 'arrowRight' : 'spark') + submitLabel + '</button>' +
           '</form>' +
           '<div class="auth-switch">' + (login ? 'Нет аккаунта?' : 'Уже есть аккаунт?') + ' <button data-action="auth-mode" data-mode="' + (login ? 'register' : 'login') + '">' + (login ? 'Создать' : 'Войти') + '</button></div>' +
-          '<div class="auth-local-note">' + icon('lock') + '<span>Аккаунт хранится только в этом браузере. Пароль не отправляется на сервер и не может быть восстановлен.</span></div>' +
+          '<button class="auth-sync-toggle" data-action="auth-sync-toggle">' + icon('cloud') + (authSyncOpen ? 'Скрыть синхронизацию' : 'Уже есть аккаунт на другом устройстве?') + '</button>' +
+          (authSyncOpen ? renderAuthSyncPanel() : '') +
+          '<div class="auth-local-note">' + icon('lock') + '<span>Пароль хранится в виде хеша и не отправляется на сервер. Синхронизация передаёт только зашифрованную копию по вашей команде.</span></div>' +
         '</section>' +
       '</main>' +
     '</div>';
@@ -11801,6 +12939,29 @@ function prepareAuthenticatedView() {
   selectedPlanDate = toISO(new Date());
 }
 
+function applyLaunchIntent() {
+  let requested = '';
+  try {
+    requested = new URLSearchParams(location.search).get('open') || '';
+  } catch (error) {
+    return;
+  }
+  if (!requested || !state.onboarded) return;
+  if (requested === 'search') {
+    openSearch();
+  } else if (['trainer', 'plan', 'fipi', 'mistakes', 'progress'].includes(requested)) {
+    view = requested;
+    if (requested === 'trainer') trainer = null;
+    render();
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  } else {
+    return;
+  }
+  try {
+    history.replaceState(null, '', location.pathname + location.hash);
+  } catch (error) {}
+}
+
 function startUserSession(user, options) {
   currentUser = user;
   activeStorageKey = accountStateKey(user.id);
@@ -11823,9 +12984,11 @@ function startUserSession(user, options) {
   editingProfile = false;
   authBusy = false;
   authError = '';
+  syncMessage = null;
   authDraft = { name: '', email: user.email, password: '', confirm: '' };
   prepareAuthenticatedView();
   render();
+  applyLaunchIntent();
   startReminders();
   if (options?.toast) showToast(options.toast.title, options.toast.text, options.toast.type || 'success');
   window.scrollTo({ top: 0, behavior: 'auto' });
@@ -12405,6 +13568,98 @@ function handleClick(event) {
     case 'set-theme':
       setTheme(actionEl.dataset.theme);
       break;
+    case 'open-search':
+      openSearch();
+      break;
+    case 'search-filter':
+      searchState.filter = actionEl.dataset.filter || 'all';
+      render();
+      requestAnimationFrame(() => document.querySelector('[data-search-input]')?.focus());
+      break;
+    case 'search-clear':
+      searchState.query = '';
+      {
+        const input = document.querySelector('[data-search-input]');
+        if (input) {
+          input.value = '';
+          input.focus();
+        }
+      }
+      updateSearchResults();
+      break;
+    case 'search-suggest':
+      searchState.query = actionEl.dataset.query || '';
+      {
+        const input = document.querySelector('[data-search-input]');
+        if (input) {
+          input.value = searchState.query;
+          input.focus();
+        }
+      }
+      updateSearchResults();
+      break;
+    case 'search-open': {
+      const type = actionEl.dataset.type;
+      const topicId = actionEl.dataset.topic;
+      const questionId = actionEl.dataset.question;
+      modal = null;
+      if (type === 'cheat' && TOPIC_BY_ID[topicId]) {
+        openModal('cheatsheet', { topicId });
+      } else if (type === 'question' && QUESTION_BY_ID[questionId]) {
+        const question = QUESTION_BY_ID[questionId];
+        startTrainer({ mode: 'topic', topicId: question.topicId, questionIds: [questionId] });
+      } else if (TOPIC_BY_ID[topicId]) {
+        selectedSubject = TOPIC_BY_ID[topicId].subject;
+        topicFilter = 'all';
+        view = 'subjects';
+        render();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      break;
+    }
+    case 'topic-filter':
+      topicFilter = actionEl.dataset.filter || 'all';
+      render();
+      break;
+    case 'review-due': {
+      const due = dueReviewTopics(10);
+      const ids = due.flatMap(item => shuffle(item.topic.questions.map(question => question.id)).slice(0, 2));
+      if (!ids.length) {
+        showToast('Повторять пока нечего', 'Пройдите практику — SM-2 сам поставит тему в очередь.', 'info');
+        return;
+      }
+      startTrainer({ mode: 'review', questionIds: shuffle(ids).slice(0, 12) });
+      break;
+    }
+    case 'open-fipi-session':
+      openFipiSession(actionEl.dataset.subject || null, actionEl.dataset.session || null);
+      break;
+    case 'save-fipi-session':
+      saveFipiSession();
+      break;
+    case 'sync-upload':
+      syncUpload();
+      break;
+    case 'sync-download':
+      syncDownload();
+      break;
+    case 'sync-save':
+      saveSyncSettings();
+      break;
+    case 'sync-forget':
+      forgetSyncSettings();
+      break;
+    case 'auth-sync-toggle':
+      authSyncOpen = !authSyncOpen;
+      syncMessage = null;
+      render();
+      break;
+    case 'pwa-install':
+      promptPWAInstall();
+      break;
+    case 'pwa-help':
+      showToast('Установка и офлайн', 'Chrome/Edge: меню ⋮ → «Установить приложение». Safari: «Поделиться» → «На экран Домой». После первого открытия service worker кэширует интерфейс.', 'info');
+      break;
     case 'nav': {
       const nextView = actionEl.dataset.view || 'dashboard';
       clearTrainerTimer();
@@ -12578,7 +13833,9 @@ function handleClick(event) {
       const optionOrder = resolveOptionOrder(question, trainer.optionOrders?.[question.id]);
       const originalSelected = optionOrder[trainer.selected];
       const isCorrect = originalSelected === question.correct;
+      const seconds = trainer.questionStartedAt ? (Date.now() - trainer.questionStartedAt) / 1000 : 0;
       trainer.answers[trainer.index] = { qid: question.id, selected: trainer.selected, originalSelected, correct: isCorrect };
+      sm2Review(question.topicId, sm2QualityForAnswer(isCorrect, seconds));
       if (isCorrect) delete state.progress.mistakes[question.id];
       else addMistake(question.id, originalSelected);
       trainer.checked = true;
@@ -12595,6 +13852,7 @@ function handleClick(event) {
         trainer.index += 1;
         trainer.selected = null;
         trainer.checked = false;
+        trainer.questionStartedAt = Date.now();
         render();
         if (trainer.mode === 'surprise') beginSurpriseTimer();
       }
@@ -12615,6 +13873,8 @@ function handleClick(event) {
       const optionOrder = resolveOptionOrder(question, daily.order);
       const originalSelected = optionOrder[daily.selected];
       const correct = originalSelected === question.correct;
+      const seconds = daily.startedAt ? (Date.now() - new Date(daily.startedAt).getTime()) / 1000 : 0;
+      sm2Review(question.topicId, sm2QualityForAnswer(correct, seconds));
       daily.checked = true;
       daily.correct = correct;
       const today = toISO(new Date());
@@ -12656,6 +13916,7 @@ function handleClick(event) {
         checked: false,
         answers: [],
         optionOrders: Object.fromEntries(trainer.queue.map(id => [id, shuffledOptionOrder(QUESTION_BY_ID[id])])),
+        questionStartedAt: Date.now(),
         finished: false,
         startedAt: new Date().toISOString()
       };
@@ -13027,6 +14288,22 @@ function handleClick(event) {
 function handleInput(event) {
   const target = event.target;
   if (!(target instanceof HTMLInputElement || target instanceof HTMLSelectElement || target instanceof HTMLTextAreaElement)) return;
+  if (target.matches('[data-search-input]')) {
+    searchState.query = target.value;
+    updateSearchResults();
+    return;
+  }
+  if (target.matches('[data-sync-field]')) {
+    syncDraft[target.dataset.syncField] = target.value;
+    if (syncMessage) syncMessage = null;
+    return;
+  }
+  if (target.matches('[data-fipi-field]')) {
+    if (!fipiDraft) return;
+    const field = target.dataset.fipiField;
+    fipiDraft[field] = ['solved', 'correct', 'minutes'].includes(field) ? Number(target.value) : target.value;
+    return;
+  }
   if (target.matches('[data-auth-field]')) {
     authDraft[target.dataset.authField] = target.value;
     if (authError) {
@@ -13113,6 +14390,19 @@ function handleChange(event) {
     if (file) handleImportFile(file);
     return;
   }
+  if (target.matches('[data-fipi-field="subject"]')) {
+    ensureFipiDraft(target.value);
+    fipiDraft.subject = target.value;
+    fipiDraft.topicId = '';
+    ensureFipiDraft(target.value);
+    render();
+    return;
+  }
+  if (target.matches('[data-fipi-field="topicId"]')) {
+    if (!fipiDraft) return;
+    fipiDraft.topicId = target.value;
+    return;
+  }
   if (target.matches('[data-ob-field]') && target.dataset.obField === 'examYear') {
     if (!obDraft) return;
     const year = Number(target.value);
@@ -13174,10 +14464,16 @@ function init() {
     handleAuthSubmit();
   });
   document.addEventListener('keydown', event => {
+    if ((event.ctrlKey || event.metaKey) && String(event.key).toLowerCase() === 'k') {
+      event.preventDefault();
+      if (currentUser && state.onboarded) openSearch();
+      return;
+    }
     if (event.key !== 'Escape') return;
     if (modal) closeModal();
     else if (celebrationCurrent) closeCelebration();
   });
+  setupPWA();
   applyTheme(currentTheme(), false);
   authMode = readAccounts().users.length ? 'login' : 'register';
   const user = readSessionUser();
