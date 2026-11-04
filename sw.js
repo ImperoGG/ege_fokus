@@ -1,11 +1,12 @@
 /* Фокус ЕГЭ — service worker для офлайн-режима и установки как приложения. */
-const CACHE_NAME = 'fokus-ege-v6';
+const CACHE_NAME = 'fokus-ege-v8';
 const SHELL = [
   './',
   './index.html',
   './manifest.webmanifest',
   './css/styles.css',
   './js/data.js',
+  './js/fipi-data.js',
   './js/practice.js',
   './js/visuals-data.js',
   './js/constants.js',
@@ -65,7 +66,16 @@ const SHELL = [
   './assets/visuals/uspensky-vladimir.jpg',
   './assets/visuals/vdnh.jpg',
   './assets/visuals/winter-palace.jpg',
-  './assets/visuals/worker-kolkhoz.jpg'
+  './assets/visuals/worker-kolkhoz.jpg',
+  './assets/fipi/math/2026-demo/graph-task-11.png',
+  './assets/fipi/physics/2026-demo/graph-task-1.png',
+  './assets/fipi/physics/2026-demo/springs-task-2.png',
+  './assets/fipi/history/2026-demo/map-razin-uprising.png',
+  './assets/fipi/history/2026-demo/medal-minin-pozharsky.png',
+  './assets/fipi/history/2026-demo/culture-1-intercession-nerl.png',
+  './assets/fipi/history/2026-demo/culture-2-ascension-kolomenskoye.png',
+  './assets/fipi/history/2026-demo/culture-3-assumption-vladimir.png',
+  './assets/fipi/history/2026-demo/culture-4-st-isaac.png'
 ];
 
 self.addEventListener('install', event => {
@@ -140,6 +150,10 @@ self.addEventListener('fetch', event => {
     }
     if (/\.(png|jpe?g|webp|svg|ico|webmanifest)$/.test(url.pathname)) {
       event.respondWith(cacheFirst(request));
+      return;
+    }
+    if (request.destination === 'script' || request.destination === 'style') {
+      event.respondWith(networkFirst(request));
       return;
     }
   }

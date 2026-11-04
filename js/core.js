@@ -354,7 +354,9 @@ function normalizeProgress(progress) {
       ...entry,
       questionId: id,
       count: Math.max(1, asFiniteNumber(entry.count, 1)),
-      lastWrong: Math.max(0, asFiniteNumber(entry.lastWrong, 0)),
+      lastWrong: Array.isArray(entry.lastWrong)
+        ? [...new Set(entry.lastWrong.map(value => Math.max(0, asFiniteNumber(value, 0))))].slice(0, 12)
+        : Math.max(0, asFiniteNumber(entry.lastWrong, 0)),
       lastAt: typeof entry.lastAt === 'string' ? entry.lastAt : ''
     };
   });

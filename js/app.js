@@ -13,6 +13,10 @@ let planWeekStart = startOfWeek(new Date());
 let selectedPlanDate = toISO(new Date());
 let trainer = null;
 let trainerSubject = null;
+let trainerListMode = 'topics';
+let trainerSourceFilter = 'all';
+let trainerDocFilter = 'all';
+let trainerYearFilter = 'all';
 let mistakeFilter = 'all';
 let settingsDraft = null;
 let modal = null;
@@ -83,6 +87,10 @@ function render() {
     queueCelebration(newlyUnlocked.map(item => ({ id: item.id, title: item.title, desc: item.desc, icon: item.icon })));
   }
   recordForecastSnapshot();
+  if (view === 'fipi') {
+    view = 'trainer';
+    trainerListMode = 'tasks';
+  }
   let content = '';
   if (view === 'plan') content = renderPlan();
   else if (view === 'subjects') content = renderSubjects();
@@ -91,7 +99,6 @@ function render() {
   else if (view === 'progress') content = renderProgress();
   else if (view === 'achievements') content = renderAchievements();
   else if (view === 'group') content = renderGroup();
-  else if (view === 'fipi') content = renderFipi();
   else if (view === 'settings') content = renderSettings();
   else content = renderDashboard();
   app.innerHTML = renderShell(content) + renderModalRoot() + renderCelebrationRoot();
@@ -730,7 +737,19 @@ function handleClick(event) {
       const topicId = actionEl.dataset.topic;
       if (!TOPIC_BY_ID[topicId]) return;
       const sessionId = actionEl.dataset.session || null;
-      startTrainer({ topicId, mode: 'topic', originSessionId: sessionId });
+      const questionIds = trainerQuestionsForTopic(topicId);
+      if (!questionIds.length) {
+        showToast('Под фильтры нет заданий', 'Измените источник, документ или год и попробуйте снова.', 'info');
+        return;
+      }
+      startTrainer({ topicId, mode: 'topic', originSessionId: sessionId, questionIds });
+      break;
+    }
+    case 'start-task': {
+      const id = actionEl.dataset.question;
+      const question = QUESTION_BY_ID[id];
+      if (!question) return;
+      startTrainer({ questionIds: [id], topicId: question.topicId, subject: question.subject, mode: 'topic' });
       break;
     }
     case 'start-mock': {
@@ -742,7 +761,12 @@ function handleClick(event) {
     case 'start-subject-practice': {
       const subjectId = actionEl.dataset.subject || trainerSubject;
       if (!SUBJECTS[subjectId]) return;
-      const questions = shuffle(allQuestionsForSubject(subjectId).map(question => question.id)).slice(0, 8);
+      const pool = allQuestionsForSubject(subjectId).filter(fipiQuestionMatchesFilters);
+      const questions = shuffle(pool.map(question => question.id)).slice(0, 8);
+      if (!questions.length) {
+        showToast('Под фильтры нет заданий', 'Выберите другой источник, документ или год.', 'info');
+        return;
+      }
       startTrainer({ subject: subjectId, mode: 'subject', questionIds: questions });
       break;
     }
@@ -793,22 +817,79 @@ function handleClick(event) {
       break;
     case 'trainer-subject':
       trainerSubject = actionEl.dataset.subject;
+      trainerDocFilter = 'all';
+      trainerYearFilter = 'all';
       trainer = null;
       render();
       break;
+    case 'trainer-list-mode':
+      trainerListMode = actionEl.dataset.mode === 'tasks' ? 'tasks' : 'topics';
+      render();
+      break;
+    case 'trainer-source': {
+      const source = actionEl.dataset.source;
+      trainerSourceFilter = ['fipi', 'authored'].includes(source) ? source : 'all';
+      if (trainerSourceFilter === 'authored') {
+        trainerDocFilter = 'all';
+        trainerYearFilter = 'all';
+      }
+      render();
+      break;
+    }
+    case 'trainer-reset-filters':
+      trainerSourceFilter = 'all';
+      trainerDocFilter = 'all';
+      trainerYearFilter = 'all';
+      render();
+      break;
+    case 'open-fipi-journal':
+      openModal('fipi-journal');
+      break;
+    case 'trainer-open-tasks': {
+      const subjectId = actionEl.dataset.subject || trainerSubject;
+      if (!SUBJECTS[subjectId]) return;
+      trainerSubject = subjectId;
+      trainerListMode = 'tasks';
+      trainerSourceFilter = 'fipi';
+      trainerDocFilter = 'all';
+      trainerYearFilter = 'all';
+      trainer = null;
+      modal = null;
+      view = 'trainer';
+      render();
+      break;
+    }
     case 'quiz-option': {
       if (!trainer || trainer.checked) return;
-      trainer.selected = Number(actionEl.dataset.index);
+      const question = QUESTION_BY_ID[trainer.queue[trainer.index]];
+      if (!question) return;
+      const index = Number(actionEl.dataset.index);
+      if (question.answerKind === 'multi') {
+        const current = Array.isArray(trainer.selected) ? trainer.selected : [];
+        trainer.selected = current.includes(index)
+          ? current.filter(value => value !== index)
+          : [...current, index].sort((a, b) => a - b);
+      } else {
+        trainer.selected = index;
+      }
       render();
       break;
     }
     case 'quiz-check': {
-      if (!trainer || trainer.selected === null || trainer.checked) return;
+      if (!trainer || trainer.checked) return;
+      const hasSelection = Array.isArray(trainer.selected) ? trainer.selected.length > 0 : trainer.selected !== null;
+      if (!hasSelection) return;
       const question = QUESTION_BY_ID[trainer.queue[trainer.index]];
       if (!question) return;
       const optionOrder = resolveOptionOrder(question, trainer.optionOrders?.[question.id]);
-      const originalSelected = optionOrder[trainer.selected];
-      const isCorrect = originalSelected === question.correct;
+      const isMulti = question.answerKind === 'multi';
+      const originalSelected = isMulti
+        ? trainer.selected.map(index => optionOrder[index]).sort((a, b) => a - b)
+        : optionOrder[trainer.selected];
+      const correctSet = (Array.isArray(question.correct) ? question.correct : [question.correct]).slice().sort((a, b) => a - b);
+      const isCorrect = isMulti
+        ? originalSelected.length === correctSet.length && originalSelected.every((value, index) => value === correctSet[index])
+        : originalSelected === question.correct;
       const seconds = trainer.questionStartedAt ? (Date.now() - trainer.questionStartedAt) / 1000 : 0;
       trainer.answers[trainer.index] = { qid: question.id, selected: trainer.selected, originalSelected, correct: isCorrect };
       sm2Review(question.topicId, sm2QualityForAnswer(isCorrect, seconds));
@@ -830,6 +911,7 @@ function handleClick(event) {
         trainer.checked = false;
         trainer.questionStartedAt = Date.now();
         render();
+        window.scrollTo({ top: 0, behavior: 'auto' });
         if (trainer.mode === 'surprise') beginSurpriseTimer();
       }
       break;
@@ -1365,6 +1447,18 @@ function handleChange(event) {
     const file = target.files?.[0];
     target.value = '';
     if (file) handleImportFile(file);
+    return;
+  }
+  if (target.matches('[data-trainer-filter]')) {
+    const field = target.dataset.trainerFilter;
+    if (field === 'doc') {
+      trainerDocFilter = target.value || 'all';
+      if (trainerDocFilter !== 'all' && trainerSourceFilter === 'authored') trainerSourceFilter = 'all';
+    } else if (field === 'year') {
+      trainerYearFilter = target.value || 'all';
+      if (trainerYearFilter !== 'all' && trainerSourceFilter === 'authored') trainerSourceFilter = 'all';
+    }
+    render();
     return;
   }
   if (target.matches('[data-fipi-field="subject"]')) {

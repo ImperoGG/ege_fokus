@@ -90,7 +90,6 @@ function pageTitle() {
     progress: 'Прогресс',
     achievements: 'Достижения',
     group: 'Группа',
-    fipi: 'Банк ФИПИ',
     settings: 'Настройки'
   };
   return titles[view] || 'Фокус';
@@ -114,8 +113,7 @@ function renderShell(content) {
     ['mistakes', 'Ошибки', 'alert', mistakes || null],
     ['progress', 'Прогресс', 'chart'],
     ['achievements', 'Награды', 'trophy'],
-    ['group', 'Группа', 'users'],
-    ['fipi', 'ФИПИ', 'bank']
+    ['group', 'Группа', 'users']
   ];
   const nav = navItems.map(([id, label, iconName, badge]) => (
     '<button class="nav-item' + (activeNav() === id ? ' active' : '') + '" data-action="nav" data-view="' + id + '">' +

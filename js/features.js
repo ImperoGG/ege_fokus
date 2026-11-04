@@ -45,6 +45,57 @@ function renderTopicFilterChips(topics) {
   )).join('') + '</div>';
 }
 
+/* === Официальные задания ФИПИ: выборка, счётчики и изображения === */
+
+function fipiSourceForQuestion(question) {
+  if (!question || question.source !== 'fipi' || typeof FIPI_SOURCES === 'undefined') return null;
+  return FIPI_SOURCES[question.sourceId] || null;
+}
+
+function fipiSourceKindLabel(question) {
+  const source = fipiSourceForQuestion(question);
+  if (!source) return '';
+  return (typeof FIPI_SOURCE_KIND_LABELS !== 'undefined' && FIPI_SOURCE_KIND_LABELS[source.kind]) || source.label || '';
+}
+
+function fipiSourcesForSubject(subjectId) {
+  if (typeof FIPI_SOURCES === 'undefined') return [];
+  return Object.values(FIPI_SOURCES)
+    .filter(source => source.subject === subjectId)
+    .sort((a, b) => Number(b.year || 0) - Number(a.year || 0) || String(a.label).localeCompare(String(b.label)));
+}
+
+function fipiYearsForSubject(subjectId) {
+  return [...new Set(fipiSourcesForSubject(subjectId).map(source => Number(source.year)).filter(Boolean))]
+    .sort((a, b) => b - a);
+}
+
+function fipiQuestionMatchesFilters(question) {
+  if (!question) return false;
+  if (trainerSourceFilter === 'fipi' && question.source !== 'fipi') return false;
+  if (trainerSourceFilter === 'authored' && question.source === 'fipi') return false;
+  if (trainerDocFilter !== 'all' && question.sourceId !== trainerDocFilter) return false;
+  if (trainerYearFilter !== 'all' && String(question.sourceYear || '') !== String(trainerYearFilter)) return false;
+  return true;
+}
+
+function topicSourceCounts(topic) {
+  const questions = topic?.questions || [];
+  const fipi = questions.filter(question => question.source === 'fipi').length;
+  return { all: questions.length, fipi, authored: questions.length - fipi };
+}
+
+function trainerQuestionsForTopic(topicId) {
+  const topic = TOPIC_BY_ID[topicId];
+  if (!topic) return [];
+  return topic.questions.filter(fipiQuestionMatchesFilters).map(question => question.id);
+}
+
+function fipiMediaForQuestion(question) {
+  if (!question || typeof FIPI_MEDIA === 'undefined') return [];
+  return (question.media || []).map(id => FIPI_MEDIA[id]).filter(Boolean);
+}
+
 /* === ФИПИ-сессии: самопроверка по официальному банку === */
 
 function fipiStats() {

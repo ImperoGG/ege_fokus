@@ -33,13 +33,18 @@ function buildSearchIndex() {
       search: normalizeSearch(['шпаргалка', topic.title, theoryText].join(' '))
     });
     topic.questions.forEach(question => {
+      const official = question.source === 'fipi';
+      const source = official ? fipiSourceForQuestion(question) : null;
       entries.push({
         type: 'question',
         topicId: topic.id,
         questionId: question.id,
         subject: topic.subject,
+        official,
         title: question.text,
-        text: question.options.join(' · ') + ' — ' + question.explanation,
+        text: official
+          ? 'Официальное задание ФИПИ · ' + (source?.label || 'документ ФИПИ') + ' · задание ' + (question.sourceItemNumber || '—')
+          : question.options.join(' · ') + ' — ' + question.explanation,
         search: normalizeSearch([question.text, question.options.join(' '), question.explanation, topic.title].join(' '))
       });
     });
@@ -117,7 +122,7 @@ function renderSearchResults() {
       '<button class="search-result" data-action="search-open" data-type="' + entry.type + '" data-topic="' + entry.topicId + '" data-question="' + (entry.questionId || '') + '">' +
         '<span class="search-result-ico ' + (entry.type === 'question' ? 'q' : entry.type === 'cheat' ? 'c' : '') + '">' + escapeHTML(iconText) + '</span>' +
         '<span class="search-result-main"><b>' + highlightSearch(entry.title, query) + '</b><small>' + highlightSearch(searchSnippet(entry.text, query), query) + '</small></span>' +
-        '<span class="search-result-meta"><span>' + searchTypeLabel(entry.type) + '</span><span>' + escapeHTML(subject?.short || '') + '</span></span>' +
+        '<span class="search-result-meta"><span>' + (entry.official ? 'ФИПИ · ' + searchTypeLabel(entry.type) : searchTypeLabel(entry.type)) + '</span><span>' + escapeHTML(subject?.short || '') + '</span></span>' +
       '</button>';
   }).join('') + '</div>';
 }

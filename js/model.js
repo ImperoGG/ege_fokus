@@ -468,8 +468,11 @@ function forecastSparkBars() {
 }
 
 function pickDailyQuestion(dateISO) {
-  const weak = topWeakTopics(12).filter(topic => topic.questions.length);
-  const pool = (weak.length ? weak : topicsForSubject(profileSubjects()[0] || '')).flatMap(topic => topic.questions.map(question => ({ question, topic })));
+  const weak = topWeakTopics(12).filter(topic => topic.questions.some(question => question.source !== 'fipi'));
+  const pools = weak.length ? weak : topicsForSubject(profileSubjects()[0] || '');
+  const pool = pools.flatMap(topic => topic.questions
+    .filter(question => question.source !== 'fipi')
+    .map(question => ({ question, topic })));
   if (!pool.length) return null;
   const seed = Number(String(dateISO || toISO(new Date())).replace(/-/g, '')) || 1;
   let index = Math.abs(seed) % pool.length;

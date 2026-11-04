@@ -36,7 +36,9 @@ function buildDiagnosticQueue() {
   const extra = target % subjects.length;
   const perSubject = subjects.map((subjectId, index) => {
     const quota = base + (index < extra ? 1 : 0);
-    const topicPools = shuffle(topicsForSubject(subjectId)).map(topic => shuffle(topic.questions.map(question => question.id)));
+    const topicPools = shuffle(topicsForSubject(subjectId))
+      .map(topic => topic.questions.filter(question => question.source !== 'fipi').map(question => question.id))
+      .filter(pool => pool.length);
     const picked = [];
     let round = 0;
     while (picked.length < quota && round < 4) {

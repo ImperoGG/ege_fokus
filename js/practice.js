@@ -347,6 +347,14 @@ const EXTRA_PRACTICE_PLUS = {
   ]
 };
 
+if (typeof FIPI_TOPICS !== 'undefined') {
+  FIPI_TOPICS.forEach(topic => {
+    if (!TOPICS.some(item => item.id === topic.id)) {
+      TOPICS.push({ ...topic, questions: [...(topic.questions || [])] });
+    }
+  });
+}
+
 TOPICS.forEach(topic => {
   if (EXTRA_PRACTICE[topic.id]) topic.questions.push(...EXTRA_PRACTICE[topic.id]);
   if (EXTRA_PRACTICE_PLUS[topic.id]) topic.questions.push(...EXTRA_PRACTICE_PLUS[topic.id]);
@@ -355,11 +363,35 @@ TOPICS.forEach(topic => {
 TOPICS.forEach(topic => {
   topic.questions = topic.questions.map((question, index) => ({
     ...question,
-    id: topic.id + '-q' + (index + 1),
+    id: question.id || topic.id + '-q' + (index + 1),
     subject: topic.subject,
     topicId: topic.id,
-    part: topic.part
+    part: topic.part,
+    source: question.source || 'authored',
+    answerKind: question.answerKind || 'single'
   }));
 });
+
+if (typeof FIPI_QUESTIONS !== 'undefined') {
+  FIPI_QUESTIONS.forEach(question => {
+    const topic = TOPICS.find(item => item.id === question.topicId);
+    if (!topic) return;
+    const source = typeof FIPI_SOURCES !== 'undefined' ? FIPI_SOURCES[question.sourceId] : null;
+    topic.questions.push({
+      ...question,
+      source: 'fipi',
+      sourceKind: source?.kind || 'demo',
+      sourceTitle: source?.title || '',
+      sourceLabel: source?.label || '',
+      sourceYear: source?.year || null,
+      sourceUrl: source?.url || '',
+      sourcePageUrl: source?.pageUrl || '',
+      verifiedAt: source?.verifiedAt || question.verifiedAt || '',
+      subject: topic.subject,
+      topicId: topic.id,
+      part: topic.part
+    });
+  });
+}
 
 /* === Наглядные материалы: авторские карты-схемы и фотографии объектов культуры === */

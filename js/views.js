@@ -349,7 +349,7 @@ function renderSubjects() {
       '<div><h1>Предметы</h1><p>Теория, алгоритмы и практика по темам. Начинайте с тем, которые дают больше баллов.</p></div>' +
       '<div class="page-actions"><button class="btn btn-primary btn-sm" data-action="nav" data-view="trainer">' + icon('target') + 'Открыть тренажёр</button></div>' +
     '</div>' +
-    '<div class="notice" style="margin-bottom:16px">' + icon('info') + '<div><b>Авторские карточки + первоисточник.</b> Внутренние задания составлены по темам кодификатора и не являются копиями ФИПИ. Официальные задания и ответы открываются в ' + externalLink(FIPI_BANK_ROOT, 'открытом банке ФИПИ') + '.</div></div>' +
+    '<div class="notice" style="margin-bottom:16px">' + icon('info') + '<div><b>Авторские карточки + первоисточник.</b> Внутренние задания составлены по темам кодификатора и не являются копиями ФИПИ. Официальные задания с документом и номером собраны в тренажёре, а полный банк доступен на ' + externalLink(FIPI_BANK_ROOT, 'сайте ФИПИ') + '.</div></div>' +
     '<div class="subjects-grid">' + cards + '</div>';
 }
 
@@ -408,7 +408,7 @@ function renderSubjectDetail(subjectId) {
   return '' +
     '<div class="page-head" style="margin-bottom:12px">' +
       '<div><button class="section-link" data-action="back-subjects" style="margin-bottom:12px">' + icon('arrowLeft') + 'Все предметы</button><h1>' + subject.name + '</h1><p>' + (isEssay ? 'Нужен зачёт' : 'Цель — ' + target + ' баллов') + '. Текущий уровень: ' + level.toLowerCase() + '. До ' + (isEssay ? 'сочинения' : 'экзамена') + ' ' + daysLabel(daysToExam(subjectId)) + '.</p></div>' +
-      '<div class="page-actions">' + fipiSubjectLink(subjectId, 'Банк ФИПИ', 'btn btn-ghost btn-sm') + '<button class="btn btn-secondary btn-sm" data-action="open-theory" data-topic="' + topics[0]?.id + '">' + icon('bookOpen') + 'Открыть теорию</button><button class="btn btn-primary btn-sm" data-action="start-subject-practice" data-subject="' + subjectId + '">' + icon('target') + 'Тренировать предмет</button></div>' +
+      '<div class="page-actions">' + fipiSubjectLink(subjectId, 'Банк ФИПИ', 'btn btn-ghost btn-sm') + '<button class="btn btn-ghost btn-sm" data-action="open-fipi-journal">' + icon('bank') + 'Журнал ФИПИ</button><button class="btn btn-secondary btn-sm" data-action="open-theory" data-topic="' + topics[0]?.id + '">' + icon('bookOpen') + 'Открыть теорию</button><button class="btn btn-primary btn-sm" data-action="start-subject-practice" data-subject="' + subjectId + '">' + icon('target') + 'Тренировать предмет</button></div>' +
     '</div>' +
     '<section class="subject-header" style="' + sessionSubjectStyle(subjectId) + '">' +
       '<div class="subject-header-inner">' +
@@ -630,7 +630,133 @@ function startTrainer(config) {
   if (trainer.mode === 'surprise') surpriseTimeLeft = 30;
   view = 'trainer';
   render();
+  window.scrollTo({ top: 0, behavior: 'auto' });
   if (trainer.mode === 'surprise') beginSurpriseTimer();
+}
+
+function optionLetters(count) {
+  return ['А', 'Б', 'В', 'Г', 'Д', 'Е', 'Ж', 'З'].slice(0, Math.max(1, count));
+}
+
+function selectedDisplayIndexes(selected) {
+  if (selected === null || selected === undefined) return [];
+  return Array.isArray(selected) ? selected : [selected];
+}
+
+function renderFipiQuestionMedia(question) {
+  const media = fipiMediaForQuestion(question);
+  if (!media.length) return '';
+  return '<div class="fipi-media-grid' + (media.length === 1 ? ' single' : '') + '">' + media.map(item => {
+    const embedded = item.status === 'embedded' && item.file;
+    return '' +
+      '<figure class="fipi-media-item">' +
+        (embedded
+          ? '<a class="fipi-media-link" href="' + escapeHTML(item.file) + '" target="_blank" rel="noopener noreferrer"><img src="' + escapeHTML(item.file) + '" alt="' + escapeHTML(item.alt || item.caption || 'Официальное изображение ФИПИ') + '" loading="lazy" width="' + Number(item.width || 0) + '" height="' + Number(item.height || 0) + '"></a>'
+          : '<div class="fipi-media-missing">' + icon('eye') + '<b>Изображение доступно по ссылке</b>' + externalLink(item.originalUrl, 'Открыть оригинал') + '</div>') +
+        '<figcaption><b>' + escapeHTML(item.caption || 'Официальное изображение') + '</b><small>' + escapeHTML(item.originalLocation || '') + '</small><a href="' + escapeHTML(item.originalUrl || '') + '" target="_blank" rel="noopener noreferrer">Оригинал ФИПИ ' + icon('arrowUpRight') + '</a></figcaption>' +
+      '</figure>';
+  }).join('') + '</div>';
+}
+
+function renderFipiQuestionSource(question, revealAnswer) {
+  const source = fipiSourceForQuestion(question);
+  if (!source) {
+    const topic = TOPIC_BY_ID[question.topicId];
+    return '<div class="q-source"><span>Авторский аналог · объяснение по теме «' + escapeHTML(topic ? topic.title : '') + '»</span>' + fipiSubjectLink(question.subject, 'Сверить в банке ФИПИ') + '</div>';
+  }
+  const kind = fipiSourceKindLabel(question);
+  const itemNumber = question.sourceItemNumber ? 'Задание ' + question.sourceItemNumber : 'Задание';
+  const verified = source.verifiedAt ? formatDateFull(parseISO(source.verifiedAt)) : '';
+  const answerNote = revealAnswer
+    ? 'Официальный ответ: ' + escapeHTML(question.officialAnswer || '') + '.'
+    : (question.optionsAuthored ? 'Варианты ответа добавлены тренажёром для самопроверки. Официальный ответ откроется после проверки.' : 'Официальный ответ откроется после проверки.');
+  return '' +
+    '<div class="fipi-source-panel">' +
+      '<div class="fipi-source-top"><span class="fipi-badge">' + icon('bank') + 'Источник: ФИПИ</span><span class="tag">' + escapeHTML(kind) + '</span><span class="tag">' + escapeHTML(String(source.year)) + '</span><span class="tag">' + escapeHTML(itemNumber) + '</span></div>' +
+      '<b class="fipi-source-title">' + escapeHTML(source.title) + '</b>' +
+      '<div class="fipi-source-meta">' +
+        '<span>Проверено: ' + escapeHTML(verified) + '</span>' +
+        '<span>Документ: ' + escapeHTML(source.shortTitle || source.label) + '</span>' +
+        '<a href="' + escapeHTML(source.url) + '" target="_blank" rel="noopener noreferrer">Открыть оригинал ' + icon('arrowUpRight') + '</a>' +
+        '<a href="' + escapeHTML(source.pageUrl || FIPI_DEMO_PAGE) + '" target="_blank" rel="noopener noreferrer">Страница ФИПИ ' + icon('arrowUpRight') + '</a>' +
+      '</div>' +
+      '<small class="fipi-source-note">' + answerNote + '</small>' +
+      '<small class="fipi-disclaimer">Официальные материалы ФИПИ не гарантируют появление именно этих заданий на экзамене.</small>' +
+    '</div>';
+}
+
+function renderTrainerFilters(subjectId, topics) {
+  const questions = topics.reduce((list, topic) => list.concat(topic.questions), []);
+  const total = questions.length;
+  const fipi = questions.filter(question => question.source === 'fipi').length;
+  const authored = total - fipi;
+  const sources = fipiSourcesForSubject(subjectId);
+  const years = fipiYearsForSubject(subjectId);
+  if (trainerDocFilter !== 'all' && !sources.some(source => source.id === trainerDocFilter)) trainerDocFilter = 'all';
+  if (trainerYearFilter !== 'all' && !years.includes(Number(trainerYearFilter))) trainerYearFilter = 'all';
+  const hasFilter = trainerSourceFilter !== 'all' || trainerDocFilter !== 'all' || trainerYearFilter !== 'all';
+  const sourceItems = [
+    ['all', 'Все', total],
+    ['fipi', 'ФИПИ', fipi],
+    ['authored', 'Авторские', authored]
+  ];
+  return '' +
+    '<div class="trainer-filters">' +
+      '<div class="seg-chips trainer-source-chips">' + sourceItems.map(([id, label, count]) => (
+        '<button class="seg-chip' + (trainerSourceFilter === id ? ' active' : '') + '" data-action="trainer-source" data-source="' + id + '">' + label + ' · ' + count + '</button>'
+      )).join('') + '</div>' +
+      '<div class="trainer-selects">' +
+        '<label class="trainer-select"><span>Документ</span><select data-trainer-filter="doc"' + (trainerSourceFilter === 'authored' ? ' disabled' : '') + '><option value="all">Все документы</option>' + sources.map(source => '<option value="' + escapeHTML(source.id) + '"' + (trainerDocFilter === source.id ? ' selected' : '') + '>' + escapeHTML(source.shortTitle || source.label) + '</option>').join('') + '</select></label>' +
+        '<label class="trainer-select"><span>Год</span><select data-trainer-filter="year"' + (trainerSourceFilter === 'authored' ? ' disabled' : '') + '><option value="all">Все годы</option>' + years.map(year => '<option value="' + year + '"' + (String(trainerYearFilter) === String(year) ? ' selected' : '') + '>' + year + '</option>').join('') + '</select></label>' +
+        (hasFilter ? '<button class="btn btn-ghost btn-sm trainer-reset" data-action="trainer-reset-filters">Сбросить</button>' : '') +
+      '</div>' +
+    '</div>';
+}
+
+function renderTrainerEmptyState(mode) {
+  const officialOnly = mode === 'fipi';
+  return '' +
+    '<div class="card pad empty-state trainer-empty" style="margin-top:12px">' +
+      '<div class="empty-ico">' + icon(officialOnly ? 'bank' : 'filter') + '</div>' +
+      '<b>' + (officialOnly ? 'Официальные задания ещё не добавлены' : 'Под выбранные фильтры заданий нет') + '</b>' +
+      '<small>' + (officialOnly ? 'Для этого предмета пока нет официальных карточек в тренажёре. Откройте первоисточник и решайте задания напрямую — прогресс можно внести в журнале ФИПИ.' : 'Измените источник, документ, год или фильтр тем. Авторские и официальные карточки не смешиваются.') + '</small>' +
+      '<div class="trainer-empty-actions">' +
+        (officialOnly ? fipiSubjectLink(trainerSubject, 'Открыть открытый банк ФИПИ', 'btn btn-primary btn-sm') : '<button class="btn btn-secondary btn-sm" data-action="trainer-reset-filters">Сбросить фильтры</button>') +
+        '<button class="btn btn-ghost btn-sm" data-action="open-fipi-journal">' + icon('bank') + 'Журнал ФИПИ</button>' +
+      '</div>' +
+    '</div>';
+}
+
+function renderTrainerTaskList(subjectId, topics) {
+  const tasks = topics
+    .filter(topicFilterMatches)
+    .flatMap(topic => topic.questions
+      .filter(fipiQuestionMatchesFilters)
+      .map((question, index) => ({ question, topic, index })));
+  if (!tasks.length) {
+    const officialInSubject = topics.some(topic => topic.questions.some(question => question.source === 'fipi'));
+    return renderTrainerEmptyState(trainerSourceFilter === 'fipi' || (!officialInSubject && trainerDocFilter === 'all') ? 'fipi' : 'filters');
+  }
+  return '' +
+    '<div class="fipi-task-list">' +
+      tasks.map(({ question, topic }) => {
+        const source = fipiSourceForQuestion(question);
+        const mediaCount = fipiMediaForQuestion(question).length;
+        return '' +
+          '<button class="fipi-task-card" data-action="start-task" data-question="' + escapeHTML(question.id) + '">' +
+            '<span class="fipi-task-head">' +
+              (source
+                ? '<span class="badge brand">' + icon('bank') + 'Источник: ФИПИ</span><span class="tag">' + escapeHTML(fipiSourceKindLabel(question)) + '</span><span class="tag">' + escapeHTML(String(source.year)) + '</span><span class="tag">№ ' + escapeHTML(question.sourceItemNumber || '—') + '</span>'
+                : '<span class="badge gray">Авторское</span><span class="tag">Аналог в формате ЕГЭ</span>') +
+              (question.answerKind === 'multi' ? '<span class="tag brand">Несколько ответов</span>' : '') +
+              (mediaCount ? '<span class="tag">' + icon('eye') + 'Изображение</span>' : '') +
+            '</span>' +
+            '<span class="fipi-task-text">' + escapeHTML(question.text) + '</span>' +
+            '<span class="fipi-task-meta"><span>' + escapeHTML(topic.title) + '</span><span>·</span><span>' + (source ? escapeHTML(source.shortTitle || source.label) : 'авторский банк «Фокуса»') + '</span></span>' +
+            '<span class="fipi-task-open">Открыть задание ' + icon('arrowRight') + '</span>' +
+          '</button>';
+      }).join('') +
+    '</div>';
 }
 
 function renderTrainerLobby() {
@@ -640,38 +766,69 @@ function renderTrainerLobby() {
   const topics = subjectId ? topicsForSubject(subjectId) : [];
   const visibleTopics = topics.filter(topicFilterMatches);
   const mistakes = getMistakeEntries().length;
+  const counts = topics.reduce((total, topic) => {
+    const sourceCounts = topicSourceCounts(topic);
+    total.all += sourceCounts.all;
+    total.fipi += sourceCounts.fipi;
+    total.authored += sourceCounts.authored;
+    return total;
+  }, { all: 0, fipi: 0, authored: 0 });
   return '' +
     '<div class="trainer-head">' +
-      '<div><h1>Тренажёр</h1><p>Карточки с выбором ответа и объяснением. Сначала пробуете, потом смотрите разбор — так материал запоминается лучше.</p></div>' +
+      '<div><h1>Тренажёр</h1><p>Официальные задания ФИПИ из демоверсий и авторские аналоги по темам кодификатора. У официальных карточек всегда указан документ, номер и ссылка на первоисточник.</p></div>' +
       '<div class="page-actions">' +
         (mistakes ? '<button class="btn btn-secondary btn-sm" data-action="practice-mistakes">' + icon('rotate') + 'Ошибки · ' + mistakes + '</button>' : '') +
+        '<button class="btn btn-ghost btn-sm" data-action="open-fipi-journal">' + icon('bank') + 'Журнал ФИПИ</button>' +
         '<button class="btn btn-ghost btn-sm" data-action="start-micro" data-minutes="3">' + icon('zap') + '3 минуты</button>' +
         '<button class="btn btn-primary btn-sm" data-action="start-mixed">' + icon('zap') + 'Смешанная тренировка</button>' +
       '</div>' +
     '</div>' +
-    '<div class="notice" style="margin-bottom:14px">' + icon('info') + '<div><b>Авторские аналоги в формате ЕГЭ.</b> Внутренние карточки не являются копиями заданий ФИПИ. Официальные формулировки и ответы открываются в ' + externalLink(FIPI_BANK_ROOT, 'открытом банке ФИПИ') + '.</div></div>' +
+    '<div class="notice" style="margin-bottom:14px">' + icon('info') + '<div><b>Официальные материалы ФИПИ.</b> Карточки с бейджем «Источник: ФИПИ» взяты из демонстрационных вариантов 2026 года. Авторские аналоги не получают бейдж ФИПИ. <a href="' + escapeHTML(FIPI_DEMO_PAGE) + '" target="_blank" rel="noopener noreferrer">Первоисточники на fipi.ru ' + icon('arrowUpRight') + '</a></div></div>' +
     '<div class="subject-tabs">' + profileSubjects().map(id => (
       '<button class="subject-tab' + (id === subjectId ? ' active' : '') + '" data-action="trainer-subject" data-subject="' + id + '" style="' + sessionSubjectStyle(id) + '"><span class="dot"></span>' + SUBJECTS[id].short + '</button>'
     )).join('') + '</div>' +
     (subject ? '' +
       '<div class="practice-banner">' +
         '<div class="pb-ico">' + icon('target') + '</div>' +
-        '<div><b>' + subject.name + '</b><small>' + allQuestionsForSubject(subject.id).length + ' ' + pluralize(allQuestionsForSubject(subject.id).length, ['задание', 'задания', 'заданий']) + ' в авторском банке · точность ' + subjectAccuracy(subject.id) + '%</small></div>' +
+        '<div><b>' + subject.name + '</b><small>' + counts.all + ' ' + pluralize(counts.all, ['задание', 'задания', 'заданий']) + ' · ФИПИ: ' + counts.fipi + ' · авторских: ' + counts.authored + ' · точность ' + subjectAccuracy(subject.id) + '%</small></div>' +
         '<button class="btn btn-secondary btn-sm" data-action="start-subject-practice" data-subject="' + subject.id + '">' + icon('play') + 'Случайные 8</button>' +
       '</div>' +
-      '<div class="practice-toolbar"><p>Выберите тему или начните тренировку по всему предмету.</p><div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">' + fipiSubjectLink(subject.id, 'Официальный банк ФИПИ', 'btn btn-ghost btn-sm') + '<span class="tag">' + topics.length + ' ' + pluralize(topics.length, ['тема', 'темы', 'тем']) + '</span></div></div>' +
-      renderTopicFilterChips(topics) +
-      (visibleTopics.length ? '<div class="practice-topics">' + visibleTopics.map(topic => {
-        const progress = state.progress.topics[topic.id] || {};
-        const due = reviewDueLabel(topic.id);
-        const showDue = (progress.practice || Number(progress.attempts || 0) > 0) && due.text !== 'новая';
-        return '' +
-          '<button class="practice-topic" data-action="start-practice" data-topic="' + topic.id + '">' +
-            '<span class="subject-mark">' + (Number(progress.attempts || 0) ? Math.round(Number(progress.best || 0)) + '%' : icon('play')) + '</span>' +
-            '<span class="practice-topic-info"><b>' + escapeHTML(topic.title) + '</b><small>' + (subject.isEssay ? 'Этап' : 'Часть ' + topic.part) + ' · ' + topic.questions.length + ' ' + pluralize(topic.questions.length, ['карточка', 'карточки', 'карточек']) + ' · вес ' + topic.weight + (showDue ? ' · ' + due.text : '') + '</small></span>' +
-            '<span class="arrow">' + icon('arrowRight') + '</span>' +
-          '</button>';
-      }).join('') + '</div>' : '<div class="card pad empty-state" style="margin-top:12px"><div class="empty-ico">' + icon('checkCircle') + '</div><b>Под этот фильтр тем нет</b><small>Переключите фильтр или начните смешанную тренировку.</small><button class="btn btn-secondary btn-sm" data-action="topic-filter" data-filter="all">Показать все темы</button></div>')
+      '<div class="trainer-mode-row">' +
+        '<div class="trainer-mode-switch" role="group" aria-label="Режим тренажёра">' +
+          '<button class="' + (trainerListMode === 'topics' ? 'active' : '') + '" data-action="trainer-list-mode" data-mode="topics">Темы</button>' +
+          '<button class="' + (trainerListMode === 'tasks' ? 'active' : '') + '" data-action="trainer-list-mode" data-mode="tasks">Задания</button>' +
+        '</div>' +
+        '<span class="small muted">' + (trainerListMode === 'topics' ? 'Выберите тему — тренировка пойдёт по текущим фильтрам.' : 'Откройте одно задание или начните подборку по фильтрам.') + '</span>' +
+      '</div>' +
+      renderTrainerFilters(subject.id, topics) +
+      (trainerListMode === 'tasks'
+        ? '<div class="practice-toolbar"><p>Задания по выбранному предмету. Клик открывает одну карточку.</p><span class="tag">' + topics.length + ' ' + pluralize(topics.length, ['тема', 'темы', 'тем']) + '</span></div>' + renderTrainerTaskList(subject.id, topics)
+        : '<div class="practice-toolbar"><p>Выберите тему или начните тренировку по всему предмету.</p><div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">' + fipiSubjectLink(subject.id, 'Открытый банк ФИПИ', 'btn btn-ghost btn-sm') + '<span class="tag">' + topics.length + ' ' + pluralize(topics.length, ['тема', 'темы', 'тем']) + '</span></div></div>' +
+          renderTopicFilterChips(topics) +
+          (visibleTopics.length ? '<div class="practice-topics">' + visibleTopics.map(topic => {
+            const progress = state.progress.topics[topic.id] || {};
+            const due = reviewDueLabel(topic.id);
+            const showDue = (progress.practice || Number(progress.attempts || 0) > 0) && due.text !== 'новая';
+            const sourceCounts = topicSourceCounts(topic);
+            const available = topic.questions.filter(fipiQuestionMatchesFilters).length;
+            const meta = (subject.isEssay ? 'Этап' : 'Часть ' + topic.part) + ' · ФИПИ: ' + sourceCounts.fipi + ' · авторских: ' + sourceCounts.authored + ' · всего ' + sourceCounts.all + (showDue ? ' · ' + due.text : '');
+            if (!available) {
+              const officialEmpty = trainerSourceFilter === 'fipi' && sourceCounts.fipi === 0;
+              return '' +
+                '<div class="practice-topic is-empty">' +
+                  '<span class="subject-mark">' + icon(officialEmpty ? 'bank' : 'filter') + '</span>' +
+                  '<span class="practice-topic-info"><b>' + escapeHTML(topic.title) + '</b><small>' + meta + '</small>' +
+                    '<span class="topic-empty-note">' + (officialEmpty ? 'Официальные задания ещё не добавлены. ' : 'Под выбранные фильтры заданий нет. ') + (officialEmpty ? fipiSubjectLink(subject.id, 'Открыть банк ФИПИ') : '<button class="section-link" data-action="trainer-reset-filters">Сбросить фильтры</button>') + '</span>' +
+                  '</span>' +
+                '</div>';
+            }
+            return '' +
+              '<button class="practice-topic" data-action="start-practice" data-topic="' + topic.id + '">' +
+                '<span class="subject-mark">' + (Number(progress.attempts || 0) ? Math.round(Number(progress.best || 0)) + '%' : icon('play')) + '</span>' +
+                '<span class="practice-topic-info"><b>' + escapeHTML(topic.title) + '</b><small>' + meta + '</small></span>' +
+                '<span class="arrow">' + icon('arrowRight') + '</span>' +
+              '</button>';
+          }).join('') + '</div>' : '<div class="card pad empty-state" style="margin-top:12px"><div class="empty-ico">' + icon('checkCircle') + '</div><b>Под этот фильтр тем нет</b><small>Переключите фильтр или начните смешанную тренировку.</small><button class="btn btn-secondary btn-sm" data-action="topic-filter" data-filter="all">Показать все темы</button></div>'))
     : '<div class="empty-state"><b>Нет выбранных предметов</b><small>Измените профиль, чтобы выбрать предметы.</small></div>');
 }
 
@@ -686,11 +843,17 @@ function renderQuiz() {
   const isLast = trainer.index >= trainer.queue.length - 1;
   const progress = Math.round((trainer.index) / trainer.queue.length * 100);
   const optionOrder = resolveOptionOrder(question, trainer.optionOrders?.[question.id]);
-  const correctDisplayIndex = optionOrder.indexOf(question.correct);
+  const letters = optionLetters(optionOrder.length);
+  const isMulti = question.answerKind === 'multi';
+  const selected = selectedDisplayIndexes(trainer.selected);
+  const correctOriginal = Array.isArray(question.correct) ? question.correct : [question.correct];
+  const correctDisplayIndexes = correctOriginal.map(original => optionOrder.indexOf(original)).filter(index => index >= 0);
+  const correctLetters = correctDisplayIndexes.map(index => letters[index]).join(', ');
+  const source = fipiSourceForQuestion(question);
   return '' +
     '<div class="quiz-shell">' +
       '<div class="quiz-top">' +
-        '<div class="quiz-top-left"><button class="btn btn-ghost btn-sm" data-action="trainer-exit">' + icon('arrowLeft') + 'Выйти</button><span class="tag">' + subject.short + '</span><span class="tag">' + (trainer.mode === 'surprise' ? 'Внезапный экзамен' : trainer.mode === 'micro' ? 'Микро-сессия' : trainer.mode === 'mock' ? 'Пробник' : trainer.mode === 'mistakes' ? 'Работа над ошибками' : trainer.mode === 'review' ? 'Повторение' : trainer.mode === 'fipi' ? 'ФИПИ' : topic ? 'Тема: ' + topic.title : 'Смешанная') + '</span></div>' +
+        '<div class="quiz-top-left"><button class="btn btn-ghost btn-sm" data-action="trainer-exit">' + icon('arrowLeft') + 'Выйти</button><span class="tag">' + subject.short + '</span><span class="tag">' + (trainer.mode === 'surprise' ? 'Внезапный экзамен' : trainer.mode === 'micro' ? 'Микро-сессия' : trainer.mode === 'mock' ? 'Пробник' : trainer.mode === 'mistakes' ? 'Работа над ошибками' : trainer.mode === 'review' ? 'Повторение' : topic ? 'Тема: ' + topic.title : 'Смешанная') + '</span></div>' +
         '<div style="display:flex;align-items:center;gap:8px">' +
           (trainer.mode === 'surprise' ? '<span class="tag brand" data-surprise-timer>' + icon('clock') + '<b>' + surpriseTimeLeft + '</b>&nbsp;с</span>' : '') +
           '<span class="quiz-progress-text">' + (trainer.index + 1) + ' / ' + trainer.queue.length + '</span>' +
@@ -703,32 +866,39 @@ function renderQuiz() {
           '<span class="quiz-qnum">' + (trainer.index + 1) + '</span>' +
           '<span class="tag brand">' + (subject.isEssay ? 'Этап' : 'Часть ' + question.part) + '</span>' +
           '<span class="tag">' + (topic ? topic.title : 'Смешанная тренировка') + '</span>' +
-          '<span class="tag" style="margin-left:auto">' + (subject.isEssay ? 'Формат допуска' : 'Формат ЕГЭ') + ' · демо</span>' +
+          (source ? '<span class="tag">ФИПИ · ' + escapeHTML(fipiSourceKindLabel(question)) + '</span>' : '<span class="tag">Авторский аналог</span>') +
+          (isMulti ? '<span class="tag brand">Выберите все верные ответы</span>' : '') +
+          '<span class="tag" style="margin-left:auto">' + (subject.isEssay ? 'Формат допуска' : 'Формат ЕГЭ') + '</span>' +
         '</div>' +
         '<div class="quiz-question">' + escapeHTML(question.text) + '</div>' +
+        renderFipiQuestionMedia(question) +
+        (source ? renderFipiQuestionSource(question, trainer.checked) : '') +
         '<div class="quiz-options">' + optionOrder.map((originalIndex, index) => {
           let className = 'quiz-option';
+          const selectedNow = selected.includes(index);
           if (trainer.checked) {
             className += ' disabled';
-            if (index === correctDisplayIndex) className += ' correct';
-            else if (index === trainer.selected) className += ' wrong';
-          } else if (index === trainer.selected) {
+            if (correctDisplayIndexes.includes(index)) className += ' correct';
+            else if (selectedNow) className += ' wrong';
+          } else if (selectedNow) {
             className += ' selected';
           }
-          return '<button class="' + className + '" data-action="quiz-option" data-index="' + index + '"><span class="option-letter">' + ['А', 'Б', 'В', 'Г'][index] + '</span><span>' + escapeHTML(question.options[originalIndex]) + '</span></button>';
+          return '<button class="' + className + '" data-action="quiz-option" data-index="' + index + '"><span class="option-letter">' + letters[index] + '</span><span>' + escapeHTML(question.options[originalIndex]) + '</span>' + (isMulti ? '<span class="option-mark">' + (selectedNow ? icon('check') : '') + '</span>' : '') + '</button>';
         }).join('') + '</div>' +
         (trainer.checked && answer ? '' +
           '<div class="quiz-explanation ' + (answer.correct ? 'good' : 'bad') + '">' +
-            '<div class="quiz-explanation-top">' + icon(answer.correct ? 'checkCircle' : 'alert') + (answer.correct ? 'Верно' : 'Неверно. Правильный ответ — ' + ['А', 'Б', 'В', 'Г'][correctDisplayIndex]) + '</div>' +
+            '<div class="quiz-explanation-top">' + icon(answer.correct ? 'checkCircle' : 'alert') + (answer.correct ? 'Верно' : 'Неверно. Правильные ответы — ' + correctLetters) + '</div>' +
             '<p>' + escapeHTML(question.explanation) + '</p>' +
-            '<div class="q-source"><span>Авторский аналог · объяснение по теме «' + escapeHTML(topic ? topic.title : '') + '»</span>' + fipiSubjectLink(question.subject, 'Сверить в банке ФИПИ') + '</div>' +
+            (source
+              ? '<div class="q-source"><span>Источник: ФИПИ · ' + escapeHTML(source.label) + ' · задание ' + escapeHTML(question.sourceItemNumber || '—') + ' · проверено ' + escapeHTML(source.verifiedAt ? formatDateFull(parseISO(source.verifiedAt)) : '') + '</span>' + externalLink(source.url, 'Открыть оригинал') + '</div>'
+              : '<div class="q-source"><span>Авторский аналог · объяснение по теме «' + escapeHTML(topic ? topic.title : '') + '»</span>' + fipiSubjectLink(question.subject, 'Сверить в банке ФИПИ') + '</div>') +
           '</div>'
         : '') +
         '<div class="quiz-footer">' +
-          '<span class="hint">' + icon('info') + (trainer.mode === 'surprise' && !trainer.checked ? '30 секунд на ответ. Время вышло — задание уходит в ошибки, без штрафа.' : trainer.checked ? (answer?.correct ? 'Отличный шаг. Дальше — закрепление.' : 'Ошибка — это материал для журнала ошибок.') : 'Один ответ. Без подсказок.') + '</span>' +
+          '<span class="hint">' + icon('info') + (trainer.mode === 'surprise' && !trainer.checked ? '30 секунд на ответ. Время вышло — задание уходит в ошибки, без штрафа.' : trainer.checked ? (answer?.correct ? 'Отличный шаг. Дальше — закрепление.' : 'Ошибка — это материал для журнала ошибок.') : isMulti ? 'Отметьте все верные варианты, затем проверьте.' : 'Один ответ. Без подсказок.') + '</span>' +
           (trainer.checked
             ? '<button class="btn btn-primary btn-sm" data-action="quiz-next">' + (isLast ? 'Завершить' : 'Следующий вопрос') + icon('arrowRight') + '</button>'
-            : '<button class="btn btn-primary btn-sm" data-action="quiz-check"' + (trainer.selected === null ? ' disabled' : '') + '>' + icon('check') + 'Проверить</button>') +
+            : '<button class="btn btn-primary btn-sm" data-action="quiz-check"' + (!selected.length ? ' disabled' : '') + '>' + icon('check') + 'Проверить</button>') +
         '</div>' +
       '</div>' +
     '</div>';
@@ -866,17 +1036,26 @@ function renderMistakes() {
       const question = item.question;
       const topic = TOPIC_BY_ID[question.topicId];
       const subject = SUBJECTS[question.subject];
-      const wrongAnswer = question.options[item.lastWrong] || '—';
-      const rightAnswer = question.options[question.correct];
+      const wrongList = Array.isArray(item.lastWrong) ? item.lastWrong : [item.lastWrong];
+      const rightList = Array.isArray(question.correct) ? question.correct : [question.correct];
+      const wrongAnswer = wrongList.map(index => question.options[index]).filter(Boolean).join('; ') || '—';
+      const rightAnswer = rightList.map(index => question.options[index]).filter(Boolean).join('; ');
+      const source = question.source === 'fipi' ? fipiSourceForQuestion(question) : null;
       return '' +
         '<article class="mistake-card">' +
           '<div class="mistake-top">' +
             '<span class="tag brand subject-tag" style="--subj-color:' + subject.color + ';--subj-soft:' + subject.soft + '">' + subject.short + '</span>' +
+            (source
+              ? '<span class="badge brand">' + icon('bank') + 'Источник: ФИПИ</span><span class="tag">' + escapeHTML(fipiSourceKindLabel(question)) + '</span><span class="tag">№ ' + escapeHTML(question.sourceItemNumber || '—') + '</span>'
+              : '') +
             '<span class="tag">' + escapeHTML(topic?.title || 'Тема') + '</span>' +
             '<span class="tag">' + (subject.isEssay ? 'Этап' : 'Часть ' + question.part) + '</span>' +
             '<span class="mistake-count">' + item.count + ' ' + pluralize(item.count, ['ошибка', 'ошибки', 'ошибок']) + '</span>' +
           '</div>' +
           '<div class="mistake-q">' + escapeHTML(question.text) + '</div>' +
+          (source
+            ? '<div class="fipi-source-meta mistake-source"><span>Документ: ' + escapeHTML(source.shortTitle || source.label) + '</span><span>' + escapeHTML(String(source.year)) + ' · задание ' + escapeHTML(question.sourceItemNumber || '—') + '</span><span>Проверено: ' + escapeHTML(source.verifiedAt ? formatDateFull(parseISO(source.verifiedAt)) : '') + '</span><a href="' + escapeHTML(source.url) + '" target="_blank" rel="noopener noreferrer">Открыть оригинал ' + icon('arrowUpRight') + '</a></div>'
+            : '') +
           '<div class="mistake-answers"><span class="wrong">Вы ответили: ' + escapeHTML(wrongAnswer) + '</span><span class="right">Верно: ' + escapeHTML(rightAnswer) + '</span></div>' +
           '<div class="mistake-actions">' +
             '<button class="btn btn-soft" data-action="practice-mistake" data-question="' + question.id + '">' + icon('rotate') + 'Решить снова</button>' +
@@ -1217,44 +1396,47 @@ function renderGroup() {
     '</div>' + renderGroupApiCard();
 }
 
-function renderFipi() {
+function renderFipiJournalModal() {
   const subjects = profileSubjects().length ? profileSubjects() : SUBJECT_ORDER;
   const stats = fipiStats();
-  const sessions = (state.progress.fipiSessions || []).slice().reverse().slice(0, 6);
+  const sessions = (state.progress.fipiSessions || []).slice().reverse().slice(0, 8);
+  const officialTotal = TOPICS.reduce((sum, topic) => sum + topic.questions.filter(question => question.source === 'fipi').length, 0);
   return '' +
-    '<div class="page-head"><div><h1>Открытый банк ФИПИ</h1><p>Официальные задания живут на сайте ФИПИ. Мы не копируем их, а помогаем открыть первоисточник и встроить работу с ним в план.</p></div><div class="page-actions"><button class="btn btn-ghost btn-sm" data-action="nav" data-view="trainer">' + icon('target') + 'К тренажёру</button><button class="btn btn-primary btn-sm" data-action="open-fipi-session">' + icon('check') + 'Отметить сессию</button></div></div>' +
-    '<section class="fipi-hero">' +
-      '<div><span class="eyebrow" style="color:var(--brand)">Первоисточник</span><h1>Банк ФИПИ — без перепечаток</h1><p>Карточки внутри «Фокуса» — авторские аналоги по темам кодификатора. Официальные формулировки, ответы и критерии открываются только на сайте ФИПИ в новой вкладке.</p><div class="fipi-hero-actions" style="margin-top:14px">' + externalLink(FIPI_BANK_ROOT, 'Открыть банк ФИПИ', 'btn btn-primary btn-sm') + '<button class="btn btn-secondary btn-sm" data-action="open-fipi-session">' + icon('check') + 'Внести результат</button></div></div>' +
-      '<div class="ach-hero-stats"><div class="ach-hero-stat"><b>' + stats.sessions + '</b><small>сессий с ФИПИ</small></div><div class="ach-hero-stat"><b>' + stats.solved + '</b><small>заданий решено</small></div><div class="ach-hero-stat"><b>' + (stats.solved ? stats.accuracy + '%' : '—') + '</b><small>точность</small></div></div>' +
-    '</section>' +
-    '<section class="card settings-section" style="margin-top:16px">' +
-      '<div class="card-head" style="margin-bottom:0"><div><h2>Журнал работы с банком</h2><p>Решите задания на сайте ФИПИ, затем внесите результат. Он попадёт в прогресс темы и в адаптивное повторение.</p></div><button class="btn btn-soft btn-sm" data-action="open-fipi-session">' + icon('layersPlus') + 'Добавить</button></div>' +
-      (sessions.length
-        ? '<div class="fipi-session-list">' + sessions.map(entry => {
-          const topic = entry.topicId ? TOPIC_BY_ID[entry.topicId] : null;
-          const percent = entry.solved ? Math.round(entry.correct / entry.solved * 100) : 0;
-          return '<div class="fipi-session-row"><b>' + escapeHTML(topic?.title || SUBJECTS[entry.subject].name) + '</b><span>' + escapeHTML(SUBJECTS[entry.subject].short) + ' · ' + formatDateShort(entry.date) + '</span><span class="' + (percent >= 75 ? 'ok' : '') + '">' + entry.correct + ' / ' + entry.solved + ' · ' + percent + '%</span></div>';
-        }).join('') + '</div>'
-        : '<div class="notice" style="margin-top:12px">' + icon('info') + '<div>Пока нет отмеченных сессий. Откройте банк ФИПИ, решите 3–5 заданий и нажмите «Отметить сессию» — прогресс темы обновится без перепечатки официальных заданий.</div></div>') +
-    '</section>' +
-    '<div class="fipi-grid">' + subjects.map(subjectId => {
-      const subject = SUBJECTS[subjectId];
-      const topics = topicsForSubject(subjectId);
-      const shown = topics.slice(0, 5);
-      return '' +
-        '<section class="card fipi-subject" style="--subj-color:' + subject.color + '">' +
-          '<div class="fipi-subject-head"><span class="subject-mark">' + subject.icon + '</span><div style="min-width:0"><b>' + escapeHTML(subject.name) + '</b><small>' + escapeHTML(FIPI_BANK[subjectId]?.label || subject.taskLabel) + '</small></div>' + fipiSubjectLink(subjectId, 'Открыть', 'btn btn-soft btn-sm') + '</div>' +
-          '<div class="fipi-topic-list">' + shown.map(topic => externalLink(fipiSubjectUrl(subjectId), '<b>' + escapeHTML(topic.title) + '</b><small>' + escapeHTML(topic.examTasks) + '</small>', 'fipi-topic-row')).join('') + '</div>' +
-          '<div class="settings-actions" style="margin-top:10px"><button class="btn btn-secondary btn-sm" data-action="open-fipi-session" data-subject="' + subjectId + '">' + icon('check') + 'Отметить результат</button><span class="small muted">' + (topics.length > shown.length ? 'ещё ' + (topics.length - shown.length) + ' тем — в банке' : 'все темы в банке') + '</span></div>' +
-        '</section>';
-    }).join('') + '</div>' +
-    '<div class="fipi-steps">' +
-      '<div class="fipi-step"><span class="fipi-step-num">1</span><b>Откройте банк</b><small>Выберите предмет и раздел по кодификатору.</small></div>' +
-      '<div class="fipi-step"><span class="fipi-step-num">2</span><b>Решите 3–5 заданий</b><small>Сначала без подсказок, затем сверьте ответ.</small></div>' +
-      '<div class="fipi-step"><span class="fipi-step-num">3</span><b>Внесите результат</b><small>Укажите тему, сколько решено и сколько верно.</small></div>' +
-      '<div class="fipi-step"><span class="fipi-step-num">4</span><b>Дождитесь повторения</b><small>SM-2 вернёт тему в нужный день — без фиксированных 3 и 10 дней.</small></div>' +
-    '</div>' +
-    '<div class="notice" style="margin-top:16px">' + icon('lock') + '<div><b>Правовая граница.</b> Приложение не перепубликует задания ФИПИ и не выдаёт свои карточки за официальные. Ссылки ведут на официальные страницы; условия использования материалов определяет ФИПИ.</div></div>';
+    '<div class="modal journal-modal" role="dialog" aria-modal="true" aria-label="Журнал работы с ФИПИ">' +
+      '<div class="modal-head"><div class="confirm-icon">' + icon('bank') + '</div><div><h2>Журнал ФИПИ</h2><p>Официальные задания живут в тренажёре, а банк ФИПИ остаётся первоисточником. Здесь — результаты самостоятельной работы с банком.</p></div><button class="icon-btn" data-action="close-modal" aria-label="Закрыть">' + icon('x') + '</button></div>' +
+      '<div class="modal-body">' +
+        '<div class="fipi-journal-stats">' +
+          '<div class="fipi-session-stat"><b>' + officialTotal + '</b><small>официальных заданий в тренажёре</small></div>' +
+          '<div class="fipi-session-stat"><b>' + stats.sessions + '</b><small>сессий с банком</small></div>' +
+          '<div class="fipi-session-stat"><b>' + (stats.solved ? stats.accuracy + '%' : '—') + '</b><small>точность</small></div>' +
+        '</div>' +
+        '<div class="notice" style="margin-top:12px">' + icon('info') + '<div><b>Официальные материалы ФИПИ.</b> В тренажёре есть задания из демоверсий 2026 года с указанием документа, номера и ссылки. Банк ФИПИ — отдельный первоисточник для дополнительной практики.</div></div>' +
+        '<div class="fipi-journal-subjects">' + subjects.map(subjectId => {
+          const subject = SUBJECTS[subjectId];
+          const official = topicsForSubject(subjectId).reduce((sum, topic) => sum + topic.questions.filter(question => question.source === 'fipi').length, 0);
+          return '' +
+            '<div class="fipi-journal-subject" style="--subj-color:' + subject.color + ';--subj-soft:' + subject.soft + '">' +
+              '<span class="subject-mark">' + subject.icon + '</span>' +
+              '<span class="fipi-journal-subject-info"><b>' + escapeHTML(subject.short) + '</b><small>В тренажёре: ' + official + ' официальных ' + pluralize(official, ['задание', 'задания', 'заданий']) + '</small></span>' +
+              '<button class="btn btn-soft btn-sm" data-action="trainer-open-tasks" data-subject="' + subjectId + '"' + (official ? '' : ' disabled') + '>Задания</button>' +
+              fipiSubjectLink(subjectId, 'Банк ФИПИ', 'btn btn-ghost btn-sm') +
+              '<button class="btn btn-ghost btn-sm" data-action="open-fipi-session" data-subject="' + subjectId + '">' + icon('check') + 'Отметить</button>' +
+            '</div>';
+        }).join('') + '</div>' +
+        '<section class="fipi-journal-sessions">' +
+          '<div class="fipi-journal-sessions-head"><b>Последние сессии</b><button class="btn btn-soft btn-sm" data-action="open-fipi-session">' + icon('layersPlus') + 'Добавить</button></div>' +
+          (sessions.length
+            ? '<div class="fipi-session-list">' + sessions.map(entry => {
+              const topic = entry.topicId ? TOPIC_BY_ID[entry.topicId] : null;
+              const percent = entry.solved ? Math.round(entry.correct / entry.solved * 100) : 0;
+              return '<div class="fipi-session-row"><b>' + escapeHTML(topic?.title || SUBJECTS[entry.subject].name) + '</b><span>' + escapeHTML(SUBJECTS[entry.subject].short) + ' · ' + formatDateShort(entry.date) + '</span><span class="' + (percent >= 75 ? 'ok' : '') + '">' + entry.correct + ' / ' + entry.solved + ' · ' + percent + '%</span></div>';
+            }).join('') + '</div>'
+            : '<div class="notice" style="margin-top:10px">' + icon('info') + '<div>Пока нет отмеченных сессий. Решите 3–5 заданий в банке ФИПИ и внесите результат — прогресс темы обновится.</div></div>') +
+        '</section>' +
+        '<div class="fipi-disclaimer" style="margin-top:12px">Официальные материалы ФИПИ не гарантируют появление именно этих заданий на экзамене.</div>' +
+      '</div>' +
+      '<div class="modal-foot"><span class="foot-note">Официальные карточки не смешиваются с авторскими.</span><div class="modal-foot-actions"><button class="btn btn-ghost btn-sm" data-action="close-modal">Закрыть</button>' + externalLink(FIPI_BANK_ROOT, 'Открыть банк ФИПИ', 'btn btn-primary btn-sm') + '</div></div>' +
+    '</div>';
 }
 
 function settingsDayChips() {
@@ -1538,6 +1720,7 @@ function renderModalRoot() {
   if (modal.type === 'theory') content = renderTheoryModal(modal.topicId);
   else if (modal.type === 'visual') content = renderVisualModal();
   else if (modal.type === 'search') content = renderSearchModal();
+  else if (modal.type === 'fipi-journal') content = renderFipiJournalModal();
   else if (modal.type === 'fipi-session') content = renderFipiSessionModal();
   else if (modal.type === 'replan') content = renderReplanModal();
   else if (modal.type === 'reset') content = renderResetModal();
