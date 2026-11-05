@@ -9,7 +9,7 @@ const ICONS = {
   target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4"/>',
   alert: '<circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.2M12 16.5h.01"/>',
   chart: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
-  settings: '<circle cx="12" cy="12" r="3.1"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06-1.74 1.74-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V20h-2.46v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06-1.74-1.74.06-.06A1.7 1.7 0 0 0 8.4 15a1.7 1.7 0 0 0-1.55-1H6.7v-2.46h.15a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06 1.74-1.74.06.06a1.7 1.7 0 0 0 1.87.34 1.7 1.7 0 0 0 1-1.55V5.6h2.46v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06 1.74 1.74-.06.06a1.7 1.7 0 0 0-.34 1.87 1.7 1.7 0 0 0 1.55 1h.15V14h-.15a1.7 1.7 0 0 0-1.55 1z"/>',
+  settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
   bell: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/>',
   flame: '<path d="M12 22c4.4 0 7-2.8 7-6.5 0-3.2-2.1-5.2-3.7-7.1C13.8 6.5 13 4.7 13 2c-2.8 1.7-4 4.4-4 7 0 1.5.6 2.7 1.2 3.5-1.6-.3-2.7-1.6-3.2-3C6 11 5 13.1 5 15.5 5 19.2 7.6 22 12 22z"/>',
   clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5.2l3.5 2"/>',
@@ -62,6 +62,18 @@ const ICONS = {
 
 function icon(name, className) {
   return '<svg' + (className ? ' class="' + className + '"' : '') + ' viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICONS[name] || '') + '</svg>';
+}
+
+/* Бейдж варианта ответа: буква до проверки, галочка/крестик после.
+   Анимацию поворота и рисования линии включает animateVerdictIcons(). */
+function verdictBadge(letter, verdict) {
+  if (verdict !== 'correct' && verdict !== 'wrong') return '<span class="option-letter">' + letter + '</span>';
+  const paths = verdict === 'correct'
+    ? '<path pathLength="1" d="M19.4 6.4 9.6 17.6 4.6 12.6"/>'
+    : '<path pathLength="1" d="M17.6 6.4 6.4 17.6"/><path pathLength="1" d="M6.4 6.4 17.6 17.6"/>';
+  return '<span class="option-letter verdict is-' + verdict + '">' +
+    '<svg class="verdict-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + paths + '</svg>' +
+    '</span>';
 }
 
 function formatMinutes(minutes) {

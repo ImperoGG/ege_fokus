@@ -6,6 +6,7 @@ let currentUser = null;
 let activeStorageKey = STORAGE_KEY;
 let view = 'dashboard';
 let obStep = 0;
+let obDirection = 'forward';
 let obDraft = null;
 let editingProfile = false;
 let selectedSubject = null;
@@ -20,6 +21,9 @@ let trainerYearFilter = 'all';
 let mistakeFilter = 'all';
 let settingsDraft = null;
 let modal = null;
+let modalCloseToken = 0;
+let lastRenderedView = '__init__';
+let answerReveal = { quiz: false, daily: false };
 let timerState = { remaining: 25 * 60, running: false, preset: 25, interval: null };
 let lastSubjectInPlan = null;
 let authMode = readAccounts().users.length ? 'login' : 'register';
@@ -67,8 +71,11 @@ let pwaRegistration = null;
 function render() {
   const app = document.getElementById('app');
   if (!app) return;
+  const entering = lastRenderedView !== view;
+  lastRenderedView = view;
   if (!currentUser) {
     app.innerHTML = renderAuth();
+    app.dataset.enter = entering ? '1' : '0';
     document.body.classList.remove('modal-open');
     document.title = 'Вход — Фокус';
     return;
@@ -76,6 +83,8 @@ function render() {
   if (!state.onboarded || !state.profile || view === 'onboarding') {
     if (!obDraft) obDraft = buildOnboardingDraft();
     app.innerHTML = renderOnboarding();
+    app.dataset.enter = entering ? '1' : '0';
+    animateAnswerFeedback(app);
     document.title = editingProfile ? 'Профиль — Фокус' : 'Знакомство — Фокус';
     document.body.classList.remove('modal-open');
     return;
@@ -105,17 +114,82 @@ function render() {
   else if (view === 'settings') content = renderSettings();
   else content = renderDashboard();
   app.innerHTML = renderShell(content) + renderModalRoot() + renderCelebrationRoot();
+  app.dataset.enter = entering ? '1' : '0';
+  animateAnswerFeedback(app);
   document.body.classList.toggle('modal-open', Boolean(modal) || Boolean(celebrationCurrent));
   document.title = 'Фокус ЕГЭ · ' + pageTitle();
   startCelebrationTimer();
 }
 
 function openModal(type, payload) {
+  modalCloseToken += 1;
   modal = { type, ...(payload || {}) };
   render();
 }
 
+function prefersReducedMotion() {
+  return Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+}
+
+/* Анимация ответа запускается ровно один раз — в момент проверки,
+   а не при каждом повторном render() с уже проверенным вопросом. */
+function animateAnswerFeedback(root) {
+  if (!answerReveal.quiz && !answerReveal.daily) return;
+  answerReveal = { quiz: false, daily: false };
+  animateVerdictIcons(root);
+  animateQuizFeedback(root);
+}
+
+/* Разбор выплывает сверху вниз: высоту считаем у реального блока,
+   чтобы оплата шла ровно до его содержимого, а не «на глазок». */
+function animateQuizFeedback(root) {
+  const box = root.querySelector('.quiz-explanation, .daily-explanation');
+  if (!box || prefersReducedMotion()) return;
+  const target = box.offsetHeight;
+  if (!target) return;
+  box.style.overflow = 'hidden';
+  const animation = box.animate(
+    [
+      { height: '0px', opacity: 0, transform: 'translate3d(0,-8px,0)' },
+      { height: target + 'px', opacity: 1, transform: 'translate3d(0,0,0)' }
+    ],
+    { duration: 460, easing: 'cubic-bezier(.65,0,.35,1)', fill: 'both' }
+  );
+  animation.finished.then(() => {
+    animation.cancel();
+    box.style.height = '';
+    box.style.overflow = '';
+  }).catch(() => {
+    box.style.height = '';
+    box.style.overflow = '';
+  });
+}
+
+
+function animateVerdictIcons(root) {
+  const svgs = root.querySelectorAll('.option-letter.verdict .verdict-svg');
+  if (!svgs.length || prefersReducedMotion()) return;
+  svgs.forEach(svg => {
+    svg.querySelectorAll('path').forEach(path => {
+      let length = 0;
+      try {
+        length = path.getTotalLength();
+      } catch (error) {
+        return;
+      }
+      if (!length) return;
+      path.style.strokeDasharray = length + 'px';
+      path.style.strokeDashoffset = length + 'px';
+      path.animate(
+        [{ strokeDashoffset: length + 'px' }, { strokeDashoffset: '0px' }],
+        { duration: 340, delay: 40, easing: 'cubic-bezier(.65,0,.35,1)', fill: 'forwards' }
+      );
+    });
+  });
+}
+
 function closeModal() {
+  if (!modal || modal.closing) return;
   stopBreathing(false);
   if (modal?.type === 'target') {
     targetDraftSubject = null;
@@ -130,9 +204,16 @@ function closeModal() {
     pendingImport = null;
     pendingImportName = '';
   }
-  modal = null;
-  document.body.classList.remove('modal-open');
+  const token = ++modalCloseToken;
+  modal = { ...modal, closing: true };
   render();
+  const delay = prefersReducedMotion() ? 0 : 170;
+  setTimeout(() => {
+    if (token !== modalCloseToken || !modal?.closing) return;
+    modal = null;
+    document.body.classList.remove('modal-open');
+    render();
+  }, delay);
 }
 
 function showToast(title, text, type) {
@@ -151,10 +232,9 @@ function showToast(title, text, type) {
   while (root.children.length >= 3) root.firstElementChild.remove();
   root.appendChild(toast);
   const remove = () => {
-    toast.style.opacity = '0';
-    toast.style.transform = 'translateY(6px)';
-    toast.style.transition = 'opacity .2s, transform .2s';
-    setTimeout(() => toast.remove(), 210);
+    if (toast.classList.contains('leaving')) return;
+    toast.classList.add('leaving');
+    setTimeout(() => toast.remove(), 200);
   };
   setTimeout(remove, 5600);
 }
@@ -168,7 +248,22 @@ function shuffle(items) {
   return copy;
 }
 
-function startEssayCheck(scope) {
+function startEssayCheck(scope, workId) {
+  if (scope === 'work') {
+    const work = typeof essayWorkById === 'function' ? essayWorkById(workId) : null;
+    const pool = typeof essayWorkQuestionIds === 'function' ? essayWorkQuestionIds(workId) : [];
+    if (!work || !pool.length) {
+      showToast('Проверка недоступна', 'Для этого произведения пока нет вопросов.', 'info');
+      return;
+    }
+    startTrainer({
+      topicId: 'e-works',
+      mode: 'topic',
+      contextLabel: '«' + work.title + '»',
+      questionIds: shuffle(pool).slice(0, Math.min(8, pool.length))
+    });
+    return;
+  }
   const topicId = scope === 'cliches' ? 'e-cliches' : 'e-works';
   const topic = TOPIC_BY_ID[topicId];
   const pool = topic ? topic.questions.map(question => question.id).filter(id => QUESTION_BY_ID[id]) : [];
@@ -521,6 +616,7 @@ function handleOnboardingNext() {
     return;
   }
   obStep += 1;
+  obDirection = 'forward';
   render();
   requestAnimationFrame(() => {
     document.querySelector('[data-ob-body]')?.scrollTo(0, 0);
@@ -530,7 +626,11 @@ function handleOnboardingNext() {
 function handleClick(event) {
   if (!(event.target instanceof Element)) return;
   if (event.target.closest('[data-toast-close]')) {
-    event.target.closest('.toast')?.remove();
+    const toast = event.target.closest('.toast');
+    if (toast && !toast.classList.contains('leaving')) {
+      toast.classList.add('leaving');
+      setTimeout(() => toast.remove(), 200);
+    }
     return;
   }
   if (event.target.matches('[data-modal-backdrop]')) {
@@ -645,7 +745,7 @@ function handleClick(event) {
       if (actionEl.dataset.work) openModal('essay-work', { workId: actionEl.dataset.work });
       break;
     case 'start-essay-check':
-      startEssayCheck(actionEl.dataset.scope);
+      startEssayCheck(actionEl.dataset.scope, actionEl.dataset.work);
       break;
     case 'copy-essay-text':
       copyEssayText(actionEl.dataset.text || '');
@@ -967,6 +1067,7 @@ function handleClick(event) {
       trainer.checked = true;
       if (trainer.mode === 'surprise') clearTrainerTimer();
       saveState();
+      answerReveal.quiz = true;
       render();
       break;
     }
@@ -1022,17 +1123,21 @@ function handleClick(event) {
       else addMistake(question.id, originalSelected);
       addActivity(2);
       saveState();
+      answerReveal.daily = true;
       render();
       showToast(correct ? 'Верно' : 'Разбор дня', correct ? 'Ещё один короткий шаг в копилку.' : 'Загляните в объяснение — это и есть польза.', correct ? 'success' : 'info');
       break;
     }
-    case 'trainer-exit':
+    case 'trainer-exit': {
       clearTrainerTimer();
       stopBreathing(false);
+      const wasMistakes = trainer?.mode === 'mistakes';
       trainer = null;
-      view = 'trainer';
+      view = actionEl.dataset.view || (wasMistakes ? 'mistakes' : 'trainer');
       render();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       break;
+    }
     case 'trainer-retry':
       if (!trainer) return;
       trainer = {
@@ -1237,6 +1342,7 @@ function handleClick(event) {
         correct: originalSelected === question.correct
       };
       obDiagQuiz.checked = true;
+      answerReveal.quiz = true;
       render();
       break;
     }
@@ -1326,6 +1432,7 @@ function handleClick(event) {
     case 'ob-back':
       if (obStep > 0) {
         obStep -= 1;
+        obDirection = 'back';
         render();
         requestAnimationFrame(() => document.querySelector('[data-ob-body]')?.scrollTo(0, 0));
       }

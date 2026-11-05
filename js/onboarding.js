@@ -211,7 +211,7 @@ function renderObDiagQuiz() {
             if (index === correctDisplayIndex) className += ' correct';
             else if (index === quiz.selected) className += ' wrong';
           } else if (index === quiz.selected) className += ' selected';
-          return '<button class="' + className + '" data-action="diag-option" data-index="' + index + '"><span class="option-letter">' + ['А', 'Б', 'В', 'Г'][index] + '</span><span>' + escapeHTML(question.options[originalIndex]) + '</span></button>';
+          return '<button class="' + className + '" data-action="diag-option" data-index="' + index + '">' + verdictBadge(['А', 'Б', 'В', 'Г'][index], quiz.checked ? (index === correctDisplayIndex ? 'correct' : (index === quiz.selected ? 'wrong' : '')) : '') + '<span>' + escapeHTML(question.options[originalIndex]) + '</span></button>';
         }).join('') + '</div>' +
         (quiz.checked && answer ? '<div class="quiz-explanation ' + (answer.correct ? 'good' : 'bad') + '"><div class="quiz-explanation-top">' + icon(answer.correct ? 'checkCircle' : 'alert') + (answer.correct ? 'Верно' : 'Неверно. Правильный ответ — ' + ['А', 'Б', 'В', 'Г'][correctDisplayIndex]) + '</div><p>' + escapeHTML(question.explanation) + '</p></div>' : '') +
         '<div class="quiz-footer"><span class="hint">' + icon('info') + (quiz.checked ? 'Диагностика не влияет на оценку — только на стартовый маршрут.' : 'Отвечайте честно: это настройка плана, а не экзамен.') + '</span>' +
@@ -565,7 +565,7 @@ function renderOnboarding() {
           '<div class="ob-progress"><div class="ob-progress-track"><div class="ob-progress-bar" style="width:' + percent + '%"></div></div><span class="ob-step-count">Шаг ' + (obStep + 1) + ' из ' + steps.length + '</span></div>' +
           (editingProfile ? '<button class="ob-close" data-action="ob-cancel">' + icon('x') + ' Отмена</button>' : '<div class="ob-head-actions"><span class="ob-step-count">≈ 5 минут</span><button class="icon-btn" data-action="logout" aria-label="Выйти из аккаунта" title="Выйти из аккаунта">' + icon('logout') + '</button></div>') +
         '</div>' +
-        '<div class="ob-body" data-ob-body>' + content + '</div>' +
+        '<div class="ob-body ' + (obDirection === 'back' ? 'is-back' : 'is-forward') + '" data-ob-body>' + content + '</div>' +
         '<div class="ob-footer"><span class="ob-footer-meta">' + (obStep === steps.length - 1 ? 'План можно пересобрать в любой момент — прогресс сохранится.' : 'Аккаунт хранится в этом браузере. Прогресс сохраняется автоматически.') + '</span><div class="ob-footer-actions">' +
           (obStep > 0 ? '<button class="btn btn-ghost btn-sm" data-action="ob-back">' + icon('arrowLeft') + 'Назад</button>' : '') +
           '<button class="btn btn-primary btn-sm" data-action="ob-next">' + (obStep === steps.length - 1 ? icon('spark') + 'Собрать план' : 'Далее' + icon('arrowRight')) + '</button>' +

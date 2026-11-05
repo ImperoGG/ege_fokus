@@ -1,0 +1,262 @@
+/* Motion-система 2026.
+   Принципы:
+   1) только transform/opacity — композитор, без layout-дёрганья;
+   2) вход экрана анимируется один раз (по смене view), а не на каждый render();
+   3) длительности 120–420 мс, кривые expo-out и мягкая пружина;
+   4) при prefers-reduced-motion всё выключается. */
+
+:root{
+  --ease-out:cubic-bezier(.22,1,.36,1);
+  --ease-in-out:cubic-bezier(.65,0,.35,1);
+  --ease-spring:cubic-bezier(.34,1.4,.64,1);
+  --dur-1:120ms;
+  --dur-2:180ms;
+  --dur-3:260ms;
+  --dur-4:320ms;
+}
+
+@keyframes m-rise{from{opacity:0;transform:translate3d(0,10px,0)}to{opacity:1;transform:none}}
+@keyframes m-fade{from{opacity:0}to{opacity:1}}
+@keyframes m-pop{0%{opacity:0;transform:scale(.96)}60%{opacity:1;transform:scale(1.012)}100%{opacity:1;transform:none}}
+@keyframes m-modal-in{from{opacity:0;transform:translate3d(0,18px,0) scale(.975)}to{opacity:1;transform:none}}
+@keyframes m-modal-out{from{opacity:1;transform:none}to{opacity:0;transform:translate3d(0,10px,0) scale(.99)}}
+@keyframes m-backdrop-in{from{opacity:0;backdrop-filter:blur(0)}to{opacity:1;backdrop-filter:blur(6px)}}
+@keyframes m-backdrop-out{from{opacity:1}to{opacity:0}}
+@keyframes m-toast-in{from{opacity:0;transform:translate3d(0,18px,0) scale(.97)}to{opacity:1;transform:none}}
+@keyframes m-toast-out{from{opacity:1;transform:none}to{opacity:0;transform:translate3d(0,10px,0) scale(.98)}}
+@keyframes m-grow-x{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes m-grow-y{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@keyframes m-bar{from{transform:scaleY(.25);opacity:0}to{transform:scaleY(1);opacity:1}}
+@keyframes m-num{from{opacity:0;transform:translate3d(0,6px,0) scale(.98)}to{opacity:1;transform:none}}
+@keyframes m-ring{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:none}}
+@keyframes m-shimmer{0%{background-position:-160% 0}100%{background-position:260% 0}}
+@keyframes m-pulse-dot{0%,100%{box-shadow:0 0 0 0 rgba(247,144,9,.35)}50%{box-shadow:0 0 0 5px rgba(247,144,9,0)}}
+
+/* ---------- вход экрана: только при смене view ---------- */
+
+#app[data-enter="1"] .content > *{
+  animation:m-rise var(--dur-4) var(--ease-out) backwards;
+}
+#app[data-enter="1"] .content > *:nth-child(2){animation-delay:30ms}
+#app[data-enter="1"] .content > *:nth-child(3){animation-delay:60ms}
+#app[data-enter="1"] .content > *:nth-child(4){animation-delay:90ms}
+#app[data-enter="1"] .content > *:nth-child(5){animation-delay:110ms}
+#app[data-enter="1"] .content > *:nth-child(n+6){animation-delay:130ms}
+
+/* базовый fadeIn у .content выключаем: он повторялся на каждый render() */
+.content{animation:none}
+/* у героя был класс .fade-up: на повторных render() он мигал, оставляем только вход экрана */
+.content .hero{animation:none}
+
+#app[data-enter="1"] .countdown-card,
+#app[data-enter="1"] .stat-card,
+#app[data-enter="1"] .essay-work-card,
+#app[data-enter="1"] .session-row,
+#app[data-enter="1"] .week-bar,
+#app[data-enter="1"] .day-tile{
+  animation:m-pop var(--dur-4) var(--ease-spring) backwards;
+}
+#app[data-enter="1"] .countdown-card:nth-child(2),
+#app[data-enter="1"] .stat-card:nth-child(2),
+#app[data-enter="1"] .essay-work-card:nth-child(2){animation-delay:30ms}
+#app[data-enter="1"] .countdown-card:nth-child(3),
+#app[data-enter="1"] .stat-card:nth-child(3),
+#app[data-enter="1"] .essay-work-card:nth-child(3){animation-delay:60ms}
+#app[data-enter="1"] .countdown-card:nth-child(4),
+#app[data-enter="1"] .stat-card:nth-child(4),
+#app[data-enter="1"] .essay-work-card:nth-child(4){animation-delay:90ms}
+#app[data-enter="1"] .countdown-card:nth-child(n+5),
+#app[data-enter="1"] .essay-work-card:nth-child(n+5){animation-delay:110ms}
+
+/* полосы прогресса «наливаются» */
+#app[data-enter="1"] .countdown-bar > span,
+#app[data-enter="1"] .coverage-track > span,
+#app[data-enter="1"] .subject-progress-track > i,
+#app[data-enter="1"] .week-bar-fill,
+#app[data-enter="1"] .target-track > span,
+#app[data-enter="1"] .subject-card-progress > span,
+#app[data-enter="1"] .quiz-progress > span,
+#app[data-enter="1"] .group-progress > span{
+  transform-origin:left center;
+  animation:m-grow-x var(--dur-4) var(--ease-out) backwards;
+}
+#app[data-enter="1"] .week-bar-fill{transform-origin:bottom center;animation-name:m-grow-y}
+#app[data-enter="1"] .activity-bar,
+#app[data-enter="1"] .forecast-spark-bar,
+#app[data-enter="1"] .spark-bar{
+  transform-origin:bottom center;
+  animation:m-grow-y var(--dur-4) var(--ease-out) backwards;
+}
+#app[data-enter="1"] .mood-heat-cell{animation:m-pop var(--dur-3) var(--ease-out) backwards}
+#app[data-enter="1"] .quick-action{animation:m-rise var(--dur-3) var(--ease-out) backwards}
+#app[data-enter="1"] .quick-action:nth-child(2){animation-delay:40ms}
+#app[data-enter="1"] .quick-action:nth-child(3){animation-delay:80ms}
+#app[data-enter="1"] .quick-action:nth-child(4){animation-delay:120ms}
+#app[data-enter="1"] .countdown-days b{animation:m-num var(--dur-4) 40ms var(--ease-out) backwards}
+#app[data-enter="1"] .hero-ring{animation:m-ring var(--dur-4) 80ms var(--ease-out) backwards}
+
+/* авторизация и онбординг */
+#app[data-enter="1"] .auth-card{animation:m-pop var(--dur-4) var(--ease-spring) backwards}
+#app[data-enter="1"] .ob-card{animation:m-rise var(--dur-4) var(--ease-out) backwards}
+#app[data-enter="1"] .ob-aside{animation:m-fade var(--dur-4) ease backwards}
+
+/* ---------- микровзаимодействия ---------- */
+
+.btn{transition:transform var(--dur-1) var(--ease-out),background var(--dur-2) ease,border-color var(--dur-2) ease,box-shadow var(--dur-2) ease,filter var(--dur-2) ease}
+.btn:hover{transform:translate3d(0,-1px,0)}
+.btn:active{transform:translate3d(0,1px,0) scale(.985);transition-duration:60ms}
+.btn-primary:active{filter:brightness(.97)}
+.icon-btn{transition:background var(--dur-2) ease,color var(--dur-2) ease,border-color var(--dur-2) ease,transform var(--dur-2) var(--ease-spring)}
+.icon-btn:hover svg{transform:rotate(-5deg) scale(1.07);transition:transform var(--dur-3) var(--ease-spring)}
+.icon-btn:active{transform:scale(.94)}
+.icon-btn svg{transition:transform var(--dur-3) var(--ease-spring)}
+
+.card,.countdown-card,.essay-work-card,.fipi-task-card,.session-row,.plan-session,.practice-topic,.topic-row,.day-tile{
+  transition:transform var(--dur-2) var(--ease-out),border-color var(--dur-2) ease,box-shadow var(--dur-3) ease,background var(--dur-2) ease;
+}
+.card.pad:hover{box-shadow:var(--shadow)}
+.countdown-card:hover,.essay-work-card:hover,.fipi-task-card:hover{transform:translate3d(0,-3px,0)}
+.fipi-task-card:hover .fipi-task-open svg,.essay-work-card:hover .essay-work-more svg{transform:translateX(3px)}
+.fipi-task-open svg,.essay-work-more svg{transition:transform var(--dur-2) var(--ease-out)}
+.day-tile:hover{transform:translate3d(0,-2px,0)}
+.session-row:hover,.plan-session:hover{transform:translate3d(0,-1px,0)}
+.practice-topic:hover{transform:translate3d(2px,0,0)}
+.topic-row:hover{transform:translate3d(2px,0,0)}
+
+.nav-item .nav-item svg{transition:transform var(--dur-2) var(--ease-spring)}
+.nav-item:hover svg{transform:scale(1.07)}
+.nav-item.active:before{animation:m-bar var(--dur-3) var(--ease-spring) both;transform-origin:center}
+.nav-item.active svg{transform:scale(1.04)}
+
+.seg-chip,.day-chip,.time-chip,.seg-chip:active,.day-chip:active,.time-chip:active{transition:transform var(--dur-1) var(--ease-out),background var(--dur-2) ease,color var(--dur-2) ease,border-color var(--dur-2) ease}
+.seg-chip:active,.day-chip:active,.time-chip:active{transform:scale(.96)}
+
+.toggle{transition:background var(--dur-2) ease}
+.toggle:after{transition:transform var(--dur-3) var(--ease-spring),background var(--dur-2) ease}
+.toggle:active:after{width:26px}
+
+.badge,.tag,.countdown-pill,.streak-pill,.pulse-dot{transition:background var(--dur-2) ease,color var(--dur-2) ease,border-color var(--dur-2) ease,transform var(--dur-2) var(--ease-spring)}
+.countdown-pill:hover,.streak-pill:hover{transform:translate3d(0,-1px,0)}
+.countdown-pill .pulse-dot{animation:m-pulse-dot 2.6s var(--ease-in-out) infinite}
+
+/* ---------- модалки ---------- */
+
+.modal-backdrop{animation:m-backdrop-in var(--dur-2) ease both}
+.modal{animation:m-modal-in var(--dur-3) var(--ease-spring) both}
+.modal-backdrop.is-closing{animation:m-backdrop-out var(--dur-2) ease both;pointer-events:none}
+.modal-backdrop.is-closing .modal{animation:m-modal-out var(--dur-2) var(--ease-out) both}
+.modal-foot .btn{transition-duration:var(--dur-2)}
+
+/* ---------- тосты ---------- */
+
+.toast{animation:m-toast-in var(--dur-3) var(--ease-spring) both}
+.toast.leaving{animation:m-toast-out var(--dur-2) var(--ease-out) both}
+.toast-close{transition:transform var(--dur-2) var(--ease-spring),background var(--dur-2) ease}
+.toast-close:hover{transform:rotate(90deg)}
+
+/* ---------- тренажёр ---------- */
+
+.quiz-option{transition:transform var(--dur-1) var(--ease-out),background var(--dur-2) ease,border-color var(--dur-2) ease,box-shadow var(--dur-2) ease}
+.quiz-option:not(.disabled):hover{transform:translate3d(2px,0,0)}
+.quiz-option:not(.disabled):active{transform:scale(.995)}
+/* ---------- вердикт: галочка/крестик вместо буквы ---------- */
+
+@keyframes q-badge{0%{transform:scale(.78)}55%{transform:scale(1.07)}100%{transform:scale(1)}}
+@keyframes q-turn{
+  0%{opacity:0;transform:rotate(120deg) scale(.55)}
+  25%{opacity:1}
+  100%{opacity:1;transform:rotate(0deg) scale(1)}
+}
+
+.quiz-option .option-letter{transition:background var(--dur-2) ease,color var(--dur-2) ease}
+.option-letter.verdict{
+  animation:q-badge 320ms cubic-bezier(.65,0,.35,1) both;
+  color:#fff;
+}
+.option-letter.verdict.is-correct{background:var(--mint)}
+.option-letter.verdict.is-wrong{background:var(--red)}
+[data-theme="dark"] .option-letter.verdict.is-correct{color:#06231a}
+[data-theme="dark"] .option-letter.verdict.is-wrong{color:#2a0d0b}
+.option-letter.verdict .verdict-svg{
+  width:16px;
+  height:16px;
+  transform-origin:50% 50%;
+  animation:q-turn 440ms cubic-bezier(.65,0,.35,1) both;
+}
+
+/* ---------- разбор «выплывает» сверху вниз от задания ----------
+   Высоту анимирует animateQuizFeedback() по реальному размеру блока,
+   чтобы разворот заканчивался ровно на контенте. */
+
+.quiz-explanation{transform-origin:top center}
+.result-orb{animation:m-ring var(--dur-4) var(--ease-spring) both}
+.result-stat{animation:m-num var(--dur-4) var(--ease-out) both}
+.result-stat:nth-child(2){animation-delay:60ms}
+.result-stat:nth-child(3){animation-delay:110ms}
+
+/* ---------- сочинение ---------- */
+
+.essay-work-foot{transition:background var(--dur-2) ease}
+.essay-work-check{transition:transform var(--dur-1) var(--ease-out),filter var(--dur-2) ease,box-shadow var(--dur-2) ease}
+.essay-work-check:active{transform:scale(.96)}
+.essay-tab{transition:background var(--dur-2) ease,color var(--dur-2) ease,transform var(--dur-2) var(--ease-spring)}
+.essay-tab:active{transform:scale(.98)}
+.essay-cliche-copy:hover{transform:rotate(-6deg)}
+.essay-cliche-copy{transition:background var(--dur-2) ease,color var(--dur-2) ease,transform var(--dur-2) var(--ease-spring)}
+
+/* ---------- онбординг: шаг едет в сторону движения ---------- */
+
+@keyframes m-step-forward{from{opacity:0;transform:translate3d(22px,0,0)}to{opacity:1;transform:none}}
+@keyframes m-step-back{from{opacity:0;transform:translate3d(-22px,0,0)}to{opacity:1;transform:none}}
+.ob-body.is-forward{animation:m-step-forward var(--dur-3) var(--ease-out) both}
+.ob-body.is-back{animation:m-step-back var(--dur-3) var(--ease-out) both}
+
+/* ---------- мелкие детали ---------- */
+
+.avatar,.mini-profile,.subject-card,.account-card-head,.settings-section{
+  transition:transform var(--dur-2) var(--ease-out),border-color var(--dur-2) ease,box-shadow var(--dur-3) ease,background var(--dur-2) ease;
+}
+.avatar:hover{transform:scale(1.04)}
+.mini-profile:hover{border-color:var(--line);box-shadow:var(--shadow-xs)}
+.subject-card:hover{transform:translate3d(0,-2px,0)}
+.section-link{transition:color var(--dur-2) ease,gap var(--dur-2) var(--ease-out)}
+.section-link:hover{gap:7px}
+.section-link svg{transition:transform var(--dur-2) var(--ease-out)}
+.section-link:hover svg{transform:translateX(2px)}
+.quick-action{transition:transform var(--dur-2) var(--ease-out),background var(--dur-2) ease,border-color var(--dur-2) ease,box-shadow var(--dur-2) ease}
+.quick-action:hover{transform:translate3d(0,-2px,0)}
+.quick-action:hover .qa-ico{transform:rotate(-6deg) scale(1.06)}
+.qa-ico{transition:transform var(--dur-3) var(--ease-spring)}
+.mood-heat-cell{transition:transform var(--dur-2) var(--ease-spring),filter var(--dur-2) ease}
+.mood-heat-cell:hover{transform:scale(1.12);filter:brightness(1.05)}
+.mood-option{transition:transform var(--dur-1) var(--ease-out),background var(--dur-2) ease,border-color var(--dur-2) ease}
+.mood-option:hover{transform:translate3d(0,-2px,0)}
+.badge,.tag{transition:background var(--dur-2) ease,color var(--dur-2) ease,border-color var(--dur-2) ease}
+:focus-visible{transition:box-shadow var(--dur-2) var(--ease-out)}
+
+/* ---------- картинки: мягкое появление без «прыжка» ---------- */
+
+.visual-thumb img,.fipi-media-link img,.visual-modal-stage img{transition:opacity var(--dur-3) ease,transform var(--dur-4) var(--ease-out)}
+.visual-card:hover .visual-thumb img{transform:scale(1.03)}
+
+/* ---------- смена темы: короткий кроссфейд цветов ---------- */
+
+html.theme-fade *,
+html.theme-fade *:before,
+html.theme-fade *:after{
+  transition:background-color 260ms ease,border-color 260ms ease,color 260ms ease,fill 260ms ease !important;
+}
+
+/* ---------- доступность ---------- */
+
+@media (prefers-reduced-motion:reduce){
+  *,
+  *:before,
+  *:after{
+    animation-duration:1ms !important;
+    animation-delay:0ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:1ms !important;
+    scroll-behavior:auto !important;
+  }
+}

@@ -28,19 +28,26 @@ function essayWorksFiltered() {
 function renderEssayWorkCard(work) {
   const characters = (work.characters || []).slice(0, 3).map(item => item.name).join(', ');
   const directions = (work.directions || []).slice(0, 3);
+  const questionCount = typeof essayWorkQuestionCount === 'function' ? essayWorkQuestionCount(work.id) : 0;
   return '' +
-    '<button class="essay-work-card" type="button" data-action="open-essay-work" data-work="' + escapeHTML(work.id) + '" aria-label="Открыть разбор: ' + escapeHTML(work.title) + '">' +
-      '<span class="essay-work-top">' +
-        '<span class="essay-work-monogram">' + escapeHTML(work.initials) + '</span>' +
-        '<span class="essay-work-title"><small>' + escapeHTML(work.author) + '</small><b>«' + escapeHTML(work.title) + '»</b></span>' +
-        '<span class="essay-work-year">' + escapeHTML(work.year) + '</span>' +
-      '</span>' +
-      '<span class="essay-work-genre">' + escapeHTML(work.genre) + '</span>' +
-      '<span class="essay-work-line">' + escapeHTML(work.oneLine) + '</span>' +
-      '<span class="essay-work-heroes"><b>Герои:</b> ' + escapeHTML(characters) + '</span>' +
-      '<span class="essay-work-tags">' + directions.map(id => '<span class="tag">' + escapeHTML(essayDirectionLabel(id)) + '</span>').join('') + '</span>' +
-      '<span class="essay-work-more">Разобрать произведение ' + icon('arrowRight') + '</span>' +
-    '</button>';
+    '<article class="essay-work-card">' +
+      '<button type="button" class="essay-work-open" data-action="open-essay-work" data-work="' + escapeHTML(work.id) + '" aria-label="Открыть разбор: ' + escapeHTML(work.title) + '">' +
+        '<span class="essay-work-top">' +
+          '<span class="essay-work-monogram">' + escapeHTML(work.initials) + '</span>' +
+          '<span class="essay-work-title"><small>' + escapeHTML(work.author) + '</small><b>«' + escapeHTML(work.title) + '»</b></span>' +
+          '<span class="essay-work-year">' + escapeHTML(work.year) + '</span>' +
+        '</span>' +
+        '<span class="essay-work-genre">' + escapeHTML(work.genre) + '</span>' +
+        '<span class="essay-work-line">' + escapeHTML(work.oneLine) + '</span>' +
+        '<span class="essay-work-heroes"><b>Герои:</b> ' + escapeHTML(characters) + '</span>' +
+        '<span class="essay-work-tags">' + directions.map(id => '<span class="tag">' + escapeHTML(essayDirectionLabel(id)) + '</span>').join('') + '</span>' +
+        '<span class="essay-work-more">Разобрать произведение ' + icon('arrowRight') + '</span>' +
+      '</button>' +
+      '<div class="essay-work-foot">' +
+        '<span class="essay-work-qcount">' + icon('target') + questionCount + ' ' + pluralize(questionCount, ['вопрос', 'вопроса', 'вопросов']) + '</span>' +
+        '<button type="button" class="essay-work-check" data-action="start-essay-check" data-scope="work" data-work="' + escapeHTML(work.id) + '"' + (questionCount ? '' : ' disabled') + '>' + icon('play') + 'Проверить' + '</button>' +
+      '</div>' +
+    '</article>';
 }
 
 function renderEssayWorksResults() {
@@ -51,7 +58,7 @@ function renderEssayWorksResults() {
       : '<div class="essay-empty"><div class="empty-ico">' + icon('search') + '</div><b>Ничего не нашлось</b><small>Попробуйте фамилию автора, название произведения или тему. Например, «Пушкин», «честь» или «Гринёв».</small><button class="btn btn-secondary btn-sm" data-action="essay-search-clear" data-scope="all">Сбросить фильтры</button></div>') +
     '<div class="essay-check-card">' +
       '<span class="essay-check-ico">' + icon('target') + '</span>' +
-      '<div class="essay-check-copy"><b>Проверить, что вы действительно помните</b><p>10 случайных вопросов об авторах, инициалах, героях и сюжетах. После каждого ответа — короткое объяснение.</p></div>' +
+      '<div class="essay-check-copy"><b>Проверить, что вы действительно помните</b><p>10 случайных вопросов об авторах, инициалах, героях и сюжетах. Или нажмите «Проверить» на карточке — 6–7 вопросов по одному произведению.</p></div>' +
       '<button class="btn btn-primary" type="button" data-action="start-essay-check" data-scope="works">' + icon('play') + 'Начать проверку</button>' +
     '</div>' +
     '<p class="essay-workspace-note">' + icon('info') + 'Подборка произведений и формулировки — авторские материалы тренажёра. Это не официальный список тем ФИПИ; проверяйте актуальные направления на сайте ФИПИ.</p>';
@@ -115,6 +122,7 @@ function renderEssayWorkspace() {
   const workCount = ESSAY_WORKS.length;
   const clicheCount = (typeof ESSAY_CLICHE_GROUPS !== 'undefined' ? ESSAY_CLICHE_GROUPS : []).reduce((sum, group) => sum + group.items.length, 0);
   const workQuestionCount = (TOPIC_BY_ID['e-works']?.questions || []).length;
+  const perWorkCount = typeof essayWorkQuestionsTotal === 'function' ? essayWorkQuestionsTotal() : 0;
   const tab = essayWorkspaceTab === 'cliches' ? 'cliches' : 'works';
   return '' +
     '<section class="essay-workspace">' +
@@ -122,8 +130,8 @@ function renderEssayWorkspace() {
         '<div>' +
           '<span class="essay-kicker">' + icon('bookOpen') + 'Рабочая тетрадь по сочинению</span>' +
           '<h2>Произведения, герои и клише</h2>' +
-          '<p>' + workCount + ' произведений с кратким пересказом, опорными эпизодами и героями. Выберите карточку, чтобы собрать аргумент, или сразу проверьте знание текста.</p>' +
-          '<div class="essay-workspace-stats"><span><b>' + workCount + '</b> произведений</span><span><b>' + workQuestionCount + '</b> вопросов</span><span><b>' + clicheCount + '</b> клише</span></div>' +
+          '<p>' + workCount + ' произведений с кратким пересказом, опорными эпизодами и героями. Откройте карточку, чтобы собрать аргумент, или проверьте знание одного произведения — ' + (perWorkCount ? '6–7 вопросов на книгу' : 'вопросы по книге') + '.</p>' +
+          '<div class="essay-workspace-stats"><span><b>' + workCount + '</b> произведений</span><span><b>' + (perWorkCount || workQuestionCount) + '</b> ' + pluralize(perWorkCount || workQuestionCount, ['вопрос', 'вопроса', 'вопросов']) + ' по книгам</span><span><b>' + clicheCount + '</b> клише</span></div>' +
         '</div>' +
         '<div class="essay-workspace-actions"><button class="btn btn-primary" type="button" data-action="start-essay-check" data-scope="works">' + icon('target') + 'Проверить знания</button><button class="btn btn-ghost" type="button" data-action="essay-tab" data-tab="cliches">' + icon('quote') + 'Клише</button></div>' +
       '</div>' +
@@ -158,6 +166,6 @@ function renderEssayWorkModal(workId) {
         (work.quote ? '<blockquote class="essay-quote">' + icon('quote') + '<p>«' + escapeHTML(work.quote.text) + '»</p><small>' + escapeHTML(work.quote.note) + '</small></blockquote>' : '') +
         '<p class="essay-workspace-note">' + icon('info') + 'Краткий пересказ и трактовка — авторские материалы тренажёра. Для точных цитат сверяйтесь с текстом произведения.</p>' +
       '</div>' +
-      '<div class="modal-foot"><span class="foot-note">' + escapeHTML(work.authorFull) + ' · ' + escapeHTML(work.year) + '</span><div class="modal-foot-actions"><button class="btn btn-ghost btn-sm" data-action="close-modal">Закрыть</button><button class="btn btn-primary btn-sm" data-action="start-essay-check" data-scope="works">' + icon('target') + 'Проверить знания</button></div></div>' +
+      '<div class="modal-foot"><span class="foot-note">' + escapeHTML(work.authorFull) + ' · ' + escapeHTML(work.year) + ' · ' + (typeof essayWorkQuestionCount === 'function' ? essayWorkQuestionCount(work.id) : 0) + ' ' + pluralize(typeof essayWorkQuestionCount === 'function' ? essayWorkQuestionCount(work.id) : 0, ['вопрос', 'вопроса', 'вопросов']) + '</span><div class="modal-foot-actions"><button class="btn btn-ghost btn-sm" data-action="close-modal">Закрыть</button><button class="btn btn-primary btn-sm" data-action="start-essay-check" data-scope="work" data-work="' + escapeHTML(work.id) + '">' + icon('play') + 'Проверить по книге</button></div></div>' +
     '</div>';
 }

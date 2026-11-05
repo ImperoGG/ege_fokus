@@ -617,6 +617,7 @@ function startTrainer(config) {
     mode: cfg.mode || (cfg.topicId ? 'topic' : 'subject'),
     subject: cfg.subject || (cfg.topicId ? TOPIC_BY_ID[cfg.topicId]?.subject : null),
     topicId: cfg.topicId || null,
+    contextLabel: cfg.contextLabel || '',
     originSessionId: cfg.originSessionId || null,
     queue,
     index: 0,
@@ -866,6 +867,7 @@ function renderQuiz() {
         '<div class="quiz-meta">' +
           '<span class="quiz-qnum">' + (trainer.index + 1) + '</span>' +
           '<span class="tag brand">' + (subject.isEssay ? 'Этап' : 'Часть ' + question.part) + '</span>' +
+          (trainer.contextLabel ? '<span class="tag brand">' + escapeHTML(trainer.contextLabel) + '</span>' : '') +
           '<span class="tag">' + (topic ? topic.title : 'Смешанная тренировка') + '</span>' +
           (source ? '<span class="tag">ФИПИ · ' + escapeHTML(fipiSourceKindLabel(question)) + '</span>' : '<span class="tag">Авторский аналог</span>') +
           (isMulti ? '<span class="tag brand">Выберите все верные ответы</span>' : '') +
@@ -884,7 +886,10 @@ function renderQuiz() {
           } else if (selectedNow) {
             className += ' selected';
           }
-          return '<button class="' + className + '" data-action="quiz-option" data-index="' + index + '"><span class="option-letter">' + letters[index] + '</span><span>' + escapeHTML(question.options[originalIndex]) + '</span>' + (isMulti ? '<span class="option-mark">' + (selectedNow ? icon('check') : '') + '</span>' : '') + '</button>';
+          const verdict = trainer.checked
+            ? (correctDisplayIndexes.includes(index) ? 'correct' : (selectedNow ? 'wrong' : ''))
+            : '';
+          return '<button class="' + className + '" data-action="quiz-option" data-index="' + index + '">' + verdictBadge(letters[index], verdict) + '<span>' + escapeHTML(question.options[originalIndex]) + '</span>' + (isMulti ? '<span class="option-mark">' + (selectedNow ? icon('check') : '') + '</span>' : '') + '</button>';
         }).join('') + '</div>' +
         (trainer.checked && answer ? '' +
           '<div class="quiz-explanation ' + (answer.correct ? 'good' : 'bad') + '">' +
@@ -897,9 +902,14 @@ function renderQuiz() {
         : '') +
         '<div class="quiz-footer">' +
           '<span class="hint">' + icon('info') + (trainer.mode === 'surprise' && !trainer.checked ? '30 секунд на ответ. Время вышло — задание уходит в ошибки, без штрафа.' : trainer.checked ? (answer?.correct ? 'Отличный шаг. Дальше — закрепление.' : 'Ошибка — это материал для журнала ошибок.') : isMulti ? 'Отметьте все верные варианты, затем проверьте.' : 'Один ответ. Без подсказок.') + '</span>' +
-          (trainer.checked
-            ? '<button class="btn btn-primary btn-sm" data-action="quiz-next">' + (isLast ? 'Завершить' : 'Следующий вопрос') + icon('arrowRight') + '</button>'
-            : '<button class="btn btn-primary btn-sm" data-action="quiz-check"' + (!selected.length ? ' disabled' : '') + '>' + icon('check') + 'Проверить</button>') +
+          '<div class="quiz-footer-actions">' +
+            (question.topicId && TOPIC_BY_ID[question.topicId]
+              ? '<button class="btn btn-ghost btn-sm" data-action="open-theory" data-topic="' + question.topicId + '">' + icon('bookOpen') + 'К теории</button>'
+              : '') +
+            (trainer.checked
+              ? '<button class="btn btn-primary btn-sm" data-action="quiz-next">' + (isLast ? 'Завершить' : 'Следующий вопрос') + icon('arrowRight') + '</button>'
+              : '<button class="btn btn-primary btn-sm" data-action="quiz-check"' + (!selected.length ? ' disabled' : '') + '>' + icon('check') + 'Проверить</button>') +
+          '</div>' +
         '</div>' +
       '</div>' +
     '</div>';
@@ -919,13 +929,16 @@ function renderTrainerResult() {
       '<div class="result-stats">' +
         '<div class="result-stat"><b>' + correct + ' / ' + total + '</b><small>верно</small></div>' +
         '<div class="result-stat"><b>' + (total - correct) + '</b><small>в журнал ошибок</small></div>' +
-        '<div class="result-stat"><b>' + (topic ? topic.title : trainer.mode === 'surprise' ? 'Внезапный экзамен' : trainer.mode === 'micro' ? 'Микро-сессия' : trainer.mode === 'mock' ? 'Пробник' : trainer.mode === 'review' ? 'Повторение' : trainer.mode === 'fipi' ? 'ФИПИ' : 'Смешанная') + '</b><small>тренировка</small></div>' +
+        '<div class="result-stat"><b>' + (trainer.contextLabel ? escapeHTML(trainer.contextLabel) : topic ? topic.title : trainer.mode === 'surprise' ? 'Внезапный экзамен' : trainer.mode === 'micro' ? 'Микро-сессия' : trainer.mode === 'mock' ? 'Пробник' : trainer.mode === 'review' ? 'Повторение' : trainer.mode === 'mistakes' ? 'Работа над ошибками' : trainer.mode === 'fipi' ? 'ФИПИ' : 'Смешанная') + '</b><small>тренировка</small></div>' +
       '</div>' +
       '<div class="encourage-line" style="justify-content:center;text-align:left;max-width:430px;margin:12px auto 0">' + icon('lightbulb') + '<span>' + escapeHTML(resultEncouragement(percent)) + '</span></div>' +
       '<div class="result-actions">' +
-        '<button class="btn btn-primary btn-sm" data-action="trainer-retry">' + icon('rotate') + 'Ещё раз</button>' +
+        (trainer.mode === 'mistakes'
+          ? '<button class="btn btn-primary btn-sm" data-action="trainer-exit">' + icon('alert') + 'К ошибкам</button>' +
+            '<button class="btn btn-secondary btn-sm" data-action="trainer-retry">' + icon('rotate') + 'Ещё раз</button>'
+          : '<button class="btn btn-primary btn-sm" data-action="trainer-retry">' + icon('rotate') + 'Ещё раз</button>') +
         (topic ? '<button class="btn btn-secondary btn-sm" data-action="open-theory" data-topic="' + topic.id + '">' + icon('bookOpen') + 'К теории</button>' : '') +
-        '<button class="btn btn-ghost btn-sm" data-action="trainer-exit">К тренажёру</button>' +
+        '<button class="btn btn-ghost btn-sm" data-action="trainer-exit" data-view="trainer">К тренажёру</button>' +
       '</div>' +
     '</div>';
 }
@@ -1220,14 +1233,13 @@ function renderDailyQuestionCard() {
         '<span class="badge mint">' + answeredDays + ' ' + pluralize(answeredDays, ['день', 'дня', 'дней']) + ' с вопросом</span>' +
       '</div>' +
       '<div class="daily-question">' + escapeHTML(question.text) + '</div>' +
-      '<div class="daily-options">' + optionOrder.map((originalIndex, index) => {
-        let className = 'daily-option';
+      '<div class="daily-options">' + optionOrder.map((originalIndex, index) => {        let className = 'daily-option';
         if (daily.checked) {
           className += ' disabled';
           if (index === correctDisplayIndex) className += ' correct';
           else if (index === daily.selected) className += ' wrong';
         } else if (index === daily.selected) className += ' selected';
-        return '<button class="' + className + '" data-action="daily-option" data-index="' + index + '"><span class="option-letter">' + ['А', 'Б', 'В', 'Г'][index] + '</span><span>' + escapeHTML(question.options[originalIndex]) + '</span></button>';
+        return '<button class="' + className + '" data-action="daily-option" data-index="' + index + '">' + verdictBadge(['А', 'Б', 'В', 'Г'][index], daily.checked ? (index === correctDisplayIndex ? 'correct' : (index === daily.selected ? 'wrong' : '')) : '') + '<span>' + escapeHTML(question.options[originalIndex]) + '</span></button>';
       }).join('') + '</div>' +
       (daily.checked ? '<div class="daily-explanation ' + explanationClass + '">' +
         '<b>' + icon(daily.correct ? 'checkCircle' : 'alert') + (daily.correct ? 'Верно' : 'Неверно. Правильный ответ — ' + ['А', 'Б', 'В', 'Г'][correctDisplayIndex]) + '</b>' +
@@ -1735,5 +1747,5 @@ function renderModalRoot() {
   else if (modal.type === 'cheatsheet') content = renderCheatsheetModal(modal.topicId);
   else if (modal.type === 'anxiety') content = renderAnxietyModal();
   if (!content) return '';
-  return '<div class="modal-backdrop" data-modal-backdrop>' + content + '</div>';
+  return '<div class="modal-backdrop' + (modal.closing ? ' is-closing' : '') + '" data-modal-backdrop>' + content + '</div>';
 }

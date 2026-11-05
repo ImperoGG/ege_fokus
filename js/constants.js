@@ -21,6 +21,19 @@ TOPICS.forEach(topic => {
   if (TOPIC_PREREQ_OVERRIDES[topic.id]) topic.prereqs = TOPIC_PREREQ_OVERRIDES[topic.id];
 });
 
+/* Один и тот же текст вопроса не должен встречаться в теме дважды:
+   банки (data.js, fipi-data.js, practice.js) собираются независимо. */
+TOPICS.forEach(topic => {
+  const seenTexts = new Set();
+  topic.questions = topic.questions.filter(question => {
+    const key = String(question.text || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    if (!key) return true;
+    if (seenTexts.has(key)) return false;
+    seenTexts.add(key);
+    return true;
+  });
+});
+
 const TOPIC_BY_ID = Object.fromEntries(TOPICS.map(t => [t.id, t]));
 const QUESTION_BY_ID = Object.fromEntries(TOPICS.flatMap(t => t.questions).map(q => [q.id, q]));
 const STORAGE_KEY = 'fokus_ege_v1';

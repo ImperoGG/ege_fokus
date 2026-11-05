@@ -1318,6 +1318,11 @@ function applyTheme(theme, persist) {
     try {
       localStorage.setItem(THEME_KEY, next);
     } catch (error) {}
+    document.documentElement.classList.add('theme-fade');
+    clearTimeout(applyTheme.fadeTimer);
+    applyTheme.fadeTimer = setTimeout(() => {
+      document.documentElement.classList.remove('theme-fade');
+    }, 340);
   }
 }
 
