@@ -1309,6 +1309,28 @@ function currentTheme() {
   return document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
 }
 
+/* Пресеты оформления: classic (текущая тема), paper и nocturne из концептов. */
+function currentStyle() {
+  try {
+    const stored = localStorage.getItem(STYLE_KEY);
+    return stored === 'paper' || stored === 'nocturne' ? stored : 'classic';
+  } catch (error) {
+    return 'classic';
+  }
+}
+
+function applyStyle(style, persist) {
+  const next = style === 'paper' || style === 'nocturne' ? style : 'classic';
+  document.documentElement.dataset.style = next;
+  if (persist) {
+    try {
+      localStorage.setItem(STYLE_KEY, next);
+    } catch (error) {}
+  }
+  if (next !== 'classic') applyTheme(next === 'paper' ? 'light' : 'dark', persist);
+  return next;
+}
+
 function applyTheme(theme, persist) {
   const next = theme === 'dark' ? 'dark' : 'light';
   document.documentElement.dataset.theme = next;
@@ -1327,6 +1349,10 @@ function applyTheme(theme, persist) {
 }
 
 function setTheme(theme) {
+  if (currentStyle() !== 'classic') {
+    applyStyle('classic', true);
+    if (typeof state === 'object' && state?.settings) state.settings.style = 'classic';
+  }
   applyTheme(theme, true);
   render();
 }

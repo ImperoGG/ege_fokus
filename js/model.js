@@ -401,8 +401,20 @@ function computeForecast() {
   };
 }
 
-function recordForecastSnapshot() {
-  if (!state.profile) return computeForecast();
+function forecastHistorySeries(limit) {
+  const history = state.progress?.forecastHistory || {};
+  return Object.keys(history)
+    .sort()
+    .slice(-(limit || 12))
+    .map(date => ({
+      date,
+      score: Number(history[date]?.score) || 0,
+      low: Number(history[date]?.low) || 0,
+      high: Number(history[date]?.high) || 0
+    }));
+}
+
+function recordForecastSnapshot() {  if (!state.profile) return computeForecast();
   const forecast = computeForecast();
   if (!forecast.maxTotal) return forecast;
   const today = toISO(new Date());

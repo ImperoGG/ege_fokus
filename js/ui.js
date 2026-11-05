@@ -65,14 +65,20 @@ function icon(name, className) {
 }
 
 /* Бейдж варианта ответа: буква до проверки, галочка/крестик после.
-   Анимацию поворота и рисования линии включает animateVerdictIcons(). */
+   Линия рисуется декларативно через SMIL (pathLength=100), поэтому анимация
+   не зависит от Web Animations API и getTotalLength(). Поворот — CSS q-turn. */
 function verdictBadge(letter, verdict) {
   if (verdict !== 'correct' && verdict !== 'wrong') return '<span class="option-letter">' + letter + '</span>';
-  const paths = verdict === 'correct'
-    ? '<path pathLength="1" d="M19.4 6.4 9.6 17.6 4.6 12.6"/>'
-    : '<path pathLength="1" d="M17.6 6.4 6.4 17.6"/><path pathLength="1" d="M6.4 6.4 17.6 17.6"/>';
+  const reduced = Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const fresh = typeof answerReveal !== 'undefined' && (answerReveal.quiz || answerReveal.daily);
+  const animate = fresh && !reduced;
+  const draw = animate ? ' pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"' : '';
+  const grow = animate ? '<animate attributeName="stroke-dashoffset" from="100" to="0" dur="0.38s" begin="0.04s" fill="freeze" calcMode="spline" keyTimes="0;1" keySplines="0.65 0 0.35 1"/>' : '';
+  const geometry = verdict === 'correct'
+    ? '<path' + draw + ' d="M19.4 6.4 9.6 17.6 4.6 12.6">' + grow + '</path>'
+    : '<path' + draw + ' d="M17.6 6.4 6.4 17.6">' + grow + '</path><path' + draw + ' d="M6.4 6.4 17.6 17.6">' + grow + '</path>';
   return '<span class="option-letter verdict is-' + verdict + '">' +
-    '<svg class="verdict-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + paths + '</svg>' +
+    '<svg class="verdict-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + geometry + '</svg>' +
     '</span>';
 }
 
@@ -266,8 +272,52 @@ function renderSessionRow(session) {
     '</div>';
 }
 
-function renderCountdownCards() {
-  return '<div class="countdown-grid">' + profileSubjects().map(id => {
+/* График прогноза для героя: сглаженная линия по последним замерам
+   forecastHistory, с мягкой заливкой. Без данных показывает подсказку. */
+function renderForecastChart(limit) {
+  const series = typeof forecastHistorySeries === 'function' ? forecastHistorySeries(limit || 10) : [];
+  if (series.length < 2) {
+    return '<div class="forecast-chart is-empty">' + icon('chart') +
+      '<span>График появится после 2–3 дней занятий</span></div>';
+  }
+  const width = 260;
+  const height = 62;
+  const pad = 5;
+  const scores = series.map(item => item.score);
+  const min = Math.min(...scores);
+  const max = Math.max(...scores);
+  const span = Math.max(1, max - min);
+  const xAt = index => pad + index * (width - pad * 2) / (series.length - 1);
+  const yAt = score => height - pad - ((score - min) / span) * (height - pad * 2);
+  let line = 'M' + xAt(0).toFixed(1) + ',' + yAt(scores[0]).toFixed(1);
+  for (let index = 1; index < scores.length; index += 1) {
+    const mid = (xAt(index - 1) + xAt(index)) / 2;
+    line += ' C' + mid.toFixed(1) + ',' + yAt(scores[index - 1]).toFixed(1) +
+      ' ' + mid.toFixed(1) + ',' + yAt(scores[index]).toFixed(1) +
+      ' ' + xAt(index).toFixed(1) + ',' + yAt(scores[index]).toFixed(1);
+  }
+  const area = line + ' L' + xAt(scores.length - 1).toFixed(1) + ',' + height +
+    ' L' + xAt(0).toFixed(1) + ',' + height + ' Z';
+  const delta = Math.round(scores[scores.length - 1] - scores[0]);
+  const deltaLabel = delta > 0 ? '+' + delta : delta < 0 ? '−' + Math.abs(delta) : '±0';
+  const lastX = xAt(scores.length - 1).toFixed(1);
+  const lastY = yAt(scores[scores.length - 1]).toFixed(1);
+  return '' +
+    '<div class="forecast-chart">' +
+      '<svg viewBox="0 0 ' + width + ' ' + height + '" preserveAspectRatio="none" aria-hidden="true">' +
+        '<defs><linearGradient id="fc-fill" x1="0" y1="0" x2="0" y2="1">' +
+          '<stop offset="0" stop-color="currentColor" stop-opacity=".30"/>' +
+          '<stop offset="1" stop-color="currentColor" stop-opacity="0"/>' +
+        '</linearGradient></defs>' +
+        '<path d="' + area + '" fill="url(#fc-fill)"/>' +
+        '<path d="' + line + '" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
+        '<circle cx="' + lastX + '" cy="' + lastY + '" r="2.6" fill="currentColor"/>' +
+      '</svg>' +
+      '<div class="fc-foot"><span>' + series.length + ' ' + pluralize(series.length, ['замер', 'замера', 'замеров']) + '</span><span class="fc-delta">' + deltaLabel + ' б.</span></div>' +
+    '</div>';
+}
+
+function renderCountdownCards() {  return '<div class="countdown-grid">' + profileSubjects().map(id => {
     const subject = SUBJECTS[id];
     const date = examDateFor(id);
     const days = daysToExam(id);

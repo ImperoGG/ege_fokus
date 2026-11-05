@@ -65,7 +65,7 @@ function renderDashboard() {
             ? '<div class="forecast-range"><b>' + forecast.lowTotal + '–' + forecast.highTotal + '</b><span>баллов</span></div>' +
               forecastTrendHTML(trend, true) +
               '<div class="forecast-avg">Средний ориентир — ' + forecast.avg + ' из 100. Диапазон сузится после практики.</div>' +
-              '<div class="forecast-meter"><span style="width:' + forecast.avg + '%"></span></div>'
+              renderForecastChart(10)
             : '<div class="forecast-avg">Добавьте предмет ЕГЭ, чтобы увидеть прогноз в баллах.</div>') +
           '<div class="forecast-note">Не официальный балл. Расчёт по темам, весам КИМ и точности.</div>' +
         '</div>' +
@@ -1567,11 +1567,14 @@ function renderSettings() {
         renderSyncSettingsCard() +
         renderPwaSettingsCard() +
         '<section class="card settings-section">' +
-          '<h2>Внешний вид</h2><p>Тема применяется сразу и запоминается на этом устройстве.</p>' +
-          '<div class="theme-options">' +
-            '<button class="theme-option' + (currentTheme() === 'light' ? ' active' : '') + '" data-action="set-theme" data-theme="light"><span class="theme-option-ico">' + icon('sun') + '</span><span><b>Светлая</b><small>Классический вид</small></span></button>' +
-            '<button class="theme-option' + (currentTheme() === 'dark' ? ' active' : '') + '" data-action="set-theme" data-theme="dark"><span class="theme-option-ico">' + icon('moon') + '</span><span><b>Тёмная</b><small>Для вечерней подготовки</small></span></button>' +
+          '<h2>Внешний вид</h2><p>Тема применяется сразу и запоминается на этом устройстве. «Классика» остаётся основной.</p>' +
+          '<div class="style-options">' +
+            '<button class="style-option' + (currentStyle() === 'classic' && currentTheme() === 'light' ? ' active' : '') + '" data-action="set-theme" data-theme="light" data-style-reset="1"><span class="style-swatch"><i style="background:#5146e5"></i><i style="background:#f4f6fb"></i><i style="background:#ffffff"></i></span><span><b>Классика</b><small>Светлая · текущая</small></span></button>' +
+            '<button class="style-option' + (currentStyle() === 'classic' && currentTheme() === 'dark' ? ' active' : '') + '" data-action="set-theme" data-theme="dark" data-style-reset="1"><span class="style-swatch"><i style="background:#8d83ff"></i><i style="background:#090c15"></i><i style="background:#111624"></i></span><span><b>Классика</b><small>Тёмная · текущая</small></span></button>' +
+            '<button class="style-option' + (currentStyle() === 'paper' ? ' active' : '') + '" data-action="set-style" data-style="paper"><span class="style-swatch"><i style="background:#1b4dff"></i><i style="background:#d8ff3e"></i><i style="background:#f4f3ee"></i></span><span><b>Бумага</b><small>Тёплая, лаймовый акцент</small></span></button>' +
+            '<button class="style-option' + (currentStyle() === 'nocturne' ? ' active' : '') + '" data-action="set-style" data-style="nocturne"><span class="style-swatch"><i style="background:#c6ff3d"></i><i style="background:#08090b"></i><i style="background:#101216"></i></span><span><b>Ноктюрн</b><small>Тёмная, лайм и моно-цифры</small></span></button>' +
           '</div>' +
+          '<div class="mvp-note">«Бумага» и «Ноктюрн» — экспериментальные темы из концептов. Вернуться к привычному виду можно в один клик.</div>' +
         '</section>' +
         '<section class="card settings-section">' +
           '<h2>Профиль</h2><p>Имя, предметы и цели.</p>' +

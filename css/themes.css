@@ -1,0 +1,139 @@
+/* Пресеты оформления: «Бумага» и «Ноктюрн» из концептов.
+   «Классика» остаётся основной и не переопределяется.
+   Файл подключается последним, поэтому его токены перекрывают styles.css. */
+
+/* ---------- переключатель тем в настройках ---------- */
+
+.style-options{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.style-option{
+  display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--line);
+  border-radius:12px;background:var(--surface);text-align:left;
+  transition:border-color .16s ease,box-shadow .2s ease,transform .16s var(--ease-out, ease);
+}
+.style-option:hover{border-color:var(--line);box-shadow:var(--shadow-xs);transform:translateY(-1px)}
+.style-option.active{border-color:var(--brand);box-shadow:0 0 0 2px rgba(81,70,229,.16)}
+.style-option b{display:block;font-size:11px;font-weight:750;letter-spacing:-.01em}
+.style-option small{display:block;font-size:8.5px;color:var(--muted);margin-top:2px;line-height:1.35}
+.style-swatch{display:flex;gap:3px;flex:none}
+.style-swatch i{width:9px;height:24px;border-radius:4px;display:block}
+
+/* ---------- «Бумага»: тёплый светлый интерфейс ---------- */
+
+:root[data-style="paper"]{
+  --bg:#f4f3ee;
+  --surface:#fffefb;
+  --surface-2:#f7f6f0;
+  --ink:#141410;
+  --ink-2:#4a4942;
+  --muted:#7c7a6f;
+  --muted-2:#a3a093;
+  --line:rgba(20,20,15,.10);
+  --line-2:rgba(20,20,15,.07);
+  --brand:#1b4dff;
+  --brand-dark:#1338c9;
+  --brand-soft:#e9efff;
+  --brand-soft-2:#f3f6ff;
+  --accent:#d8ff3e;
+  --shadow:0 14px 32px rgba(20,20,15,.08);
+  --shadow-xs:0 1px 2px rgba(20,20,15,.06);
+  --ring:0 0 0 3px rgba(27,77,255,.22);
+}
+[data-style="paper"] body{
+  background:
+    radial-gradient(900px 520px at 10% -12%,rgba(27,77,255,.07),transparent 60%),
+    radial-gradient(700px 420px at 96% 2%,rgba(216,255,62,.20),transparent 55%),
+    var(--bg);
+}
+[data-style="paper"] .sidebar{
+  background:linear-gradient(180deg,rgba(255,254,251,.96),rgba(250,249,243,.9));
+  border-right-color:var(--line);
+}
+[data-style="paper"] .topbar{background:rgba(250,249,243,.82);border-bottom-color:rgba(20,20,15,.08)}
+[data-style="paper"] .hero{
+  background:
+    radial-gradient(640px 330px at 88% -16%,rgba(216,255,62,.16),transparent 60%),
+    linear-gradient(135deg,#141410 0%,#1c2030 58%,#232a52 100%);
+  box-shadow:0 28px 60px -28px rgba(20,20,15,.5),inset 0 1px 0 rgba(255,255,255,.08);
+}
+[data-style="paper"] .btn-primary{background:var(--accent);color:#141410;box-shadow:0 8px 18px -10px rgba(20,20,15,.55)}
+[data-style="paper"] .btn-primary:hover{filter:brightness(.98)}
+[data-style="paper"] .hero .btn-primary{background:var(--accent);color:#141410}
+[data-style="paper"] .card{box-shadow:none}
+[data-style="paper"] .countdown-card{background:linear-gradient(168deg,#fffefb,#faf9f4);border-color:rgba(20,20,15,.10)}
+[data-style="paper"] .nav-item.active{background:linear-gradient(100deg,rgba(27,77,255,.12),rgba(27,77,255,.03));color:#1338c9}
+[data-style="paper"] .nav-item.active:before{background:#1b4dff}
+[data-style="paper"] .badge.brand{background:#e9efff;color:#1338c9}
+[data-style="paper"] .tag{background:#f4f3ee;border-color:rgba(20,20,15,.08)}
+[data-style="paper"] .streak-pill,
+[data-style="paper"] .countdown-pill{background:#fffefb;border-color:rgba(20,20,15,.10)}
+[data-style="paper"] .forecast-chart{color:#d8ff3e}
+[data-style="paper"] .fc-delta{color:#d8ff3e}
+
+/* ---------- «Ноктюрн»: тёмный фокус-режим ---------- */
+
+:root[data-style="nocturne"]{
+  --bg:#08090b;
+  --surface:#101216;
+  --surface-2:#15181d;
+  --ink:#eef0f5;
+  --ink-2:#b9bfcc;
+  --muted:#828a9a;
+  --muted-2:#5f6878;
+  --line:rgba(255,255,255,.08);
+  --line-2:rgba(255,255,255,.05);
+  --brand:#c6ff3d;
+  --brand-dark:#d8ff6a;
+  --brand-soft:rgba(198,255,61,.12);
+  --brand-soft-2:rgba(198,255,61,.06);
+  --accent:#c6ff3d;
+  --mint:#3ddba4;
+  --orange:#f8a13a;
+  --red:#ff6b6b;
+  --blue:#8b7cff;
+  --shadow:0 18px 44px rgba(0,0,0,.55);
+  --shadow-xs:0 1px 2px rgba(0,0,0,.6);
+  --ring:0 0 0 3px rgba(198,255,61,.28);
+}
+[data-style="nocturne"] body{
+  background:
+    radial-gradient(820px 470px at 88% -12%,rgba(198,255,61,.09),transparent 58%),
+    radial-gradient(700px 420px at 4% 0%,rgba(139,124,255,.10),transparent 55%),
+    var(--bg);
+}
+[data-style="nocturne"] .sidebar{
+  background:linear-gradient(180deg,rgba(13,15,19,.97),rgba(10,12,15,.9));
+  border-right-color:var(--line);
+}
+[data-style="nocturne"] .topbar{background:rgba(10,12,15,.82);border-bottom-color:var(--line)}
+[data-style="nocturne"] .hero{
+  background:
+    radial-gradient(620px 320px at 90% -12%,rgba(198,255,61,.18),transparent 62%),
+    linear-gradient(135deg,#0b0d10 0%,#11161c 55%,#141a12 100%);
+  box-shadow:0 30px 64px -30px rgba(0,0,0,.9),inset 0 1px 0 rgba(255,255,255,.05);
+}
+[data-style="nocturne"] .btn-primary{background:var(--accent);color:#0a0b06;box-shadow:0 10px 24px -12px rgba(198,255,61,.75)}
+[data-style="nocturne"] .btn-primary:hover{filter:brightness(1.06)}
+[data-style="nocturne"] .hero .btn-primary{background:var(--accent);color:#0a0b06}
+[data-style="nocturne"] .nav-item.active{background:rgba(198,255,61,.12);color:#d8ff6a}
+[data-style="nocturne"] .nav-item.active:before{background:var(--accent)}
+[data-style="nocturne"] .badge.brand{background:rgba(198,255,61,.14);color:#d8ff6a}
+[data-style="nocturne"] .card{border-color:var(--line);box-shadow:none}
+[data-style="nocturne"] .countdown-card{background:linear-gradient(168deg,#101216,#0c0e12);border-color:var(--line)}
+[data-style="nocturne"] .countdown-days b,
+[data-style="nocturne"] .stat-card b,
+[data-style="nocturne"] .forecast-range b,
+[data-style="nocturne"] .result-orb-inner b,
+[data-style="nocturne"] .week-bar b,
+[data-style="nocturne"] .fc-foot{
+  font-family:'JetBrains Mono',ui-monospace,monospace;
+  letter-spacing:-.04em;
+}
+[data-style="nocturne"] .fc-delta{color:#d8ff6a}
+[data-style="nocturne"] .forecast-chart{color:var(--accent)}
+[data-style="nocturne"] .streak-pill,
+[data-style="nocturne"] .countdown-pill{background:#101216;border-color:var(--line)}
+[data-style="nocturne"] .seg-chip.active,
+[data-style="nocturne"] .day-chip.active,
+[data-style="nocturne"] .time-chip.active{
+  background:rgba(198,255,61,.14);border-color:rgba(198,255,61,.45);color:#d8ff6a;
+}

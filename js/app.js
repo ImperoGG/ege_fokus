@@ -131,15 +131,6 @@ function prefersReducedMotion() {
   return Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 }
 
-/* Анимация ответа запускается ровно один раз — в момент проверки,
-   а не при каждом повторном render() с уже проверенным вопросом. */
-function animateAnswerFeedback(root) {
-  if (!answerReveal.quiz && !answerReveal.daily) return;
-  answerReveal = { quiz: false, daily: false };
-  animateVerdictIcons(root);
-  animateQuizFeedback(root);
-}
-
 /* Разбор выплывает сверху вниз: высоту считаем у реального блока,
    чтобы оплата шла ровно до его содержимого, а не «на глазок». */
 function animateQuizFeedback(root) {
@@ -166,26 +157,12 @@ function animateQuizFeedback(root) {
 }
 
 
-function animateVerdictIcons(root) {
-  const svgs = root.querySelectorAll('.option-letter.verdict .verdict-svg');
-  if (!svgs.length || prefersReducedMotion()) return;
-  svgs.forEach(svg => {
-    svg.querySelectorAll('path').forEach(path => {
-      let length = 0;
-      try {
-        length = path.getTotalLength();
-      } catch (error) {
-        return;
-      }
-      if (!length) return;
-      path.style.strokeDasharray = length + 'px';
-      path.style.strokeDashoffset = length + 'px';
-      path.animate(
-        [{ strokeDashoffset: length + 'px' }, { strokeDashoffset: '0px' }],
-        { duration: 340, delay: 40, easing: 'cubic-bezier(.65,0,.35,1)', fill: 'forwards' }
-      );
-    });
-  });
+/* Анимация разбора запускается ровно один раз — в момент проверки,
+   а не при каждом повторном render() с уже проверенным вопросом. */
+function animateAnswerFeedback(root) {
+  if (!answerReveal.quiz && !answerReveal.daily) return;
+  answerReveal = { quiz: false, daily: false };
+  animateQuizFeedback(root);
 }
 
 function closeModal() {
@@ -214,6 +191,18 @@ function closeModal() {
     document.body.classList.remove('modal-open');
     render();
   }, delay);
+}
+
+function setStyle(style) {
+  const next = applyStyle(style, true);
+  if (state?.settings) state.settings.style = next;
+  saveState();
+  render();
+  showToast(
+    next === 'paper' ? 'Тема «Бумага»' : next === 'nocturne' ? 'Тема «Ноктюрн»' : 'Классическая тема',
+    next === 'classic' ? 'Вернули привычное оформление.' : 'Сохранено на этом устройстве.',
+    'success'
+  );
 }
 
 function showToast(title, text, type) {
@@ -667,6 +656,9 @@ function handleClick(event) {
       break;
     case 'set-theme':
       setTheme(actionEl.dataset.theme);
+      break;
+    case 'set-style':
+      setStyle(actionEl.dataset.style || 'classic');
       break;
     case 'open-search':
       openSearch();
@@ -1735,6 +1727,7 @@ function init() {
   });
   setupPWA();
   applyTheme(currentTheme(), false);
+  applyStyle(currentStyle(), false);
   authMode = readAccounts().users.length ? 'login' : 'register';
   const user = readSessionUser();
   if (user) {

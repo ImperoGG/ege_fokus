@@ -40,6 +40,7 @@ const STORAGE_KEY = 'fokus_ege_v1';
 const ACCOUNTS_KEY = 'fokus_accounts_v1';
 const SESSION_KEY = 'fokus_session_v1';
 const THEME_KEY = 'fokus_theme_v1';
+const STYLE_KEY = 'fokus_style_v1';
 const PASSWORD_ITERATIONS = 120000;
 const LEVEL_OPTIONS = [
   { id: 'zero', label: 'С нуля', value: 0 },
