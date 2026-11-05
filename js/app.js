@@ -51,6 +51,9 @@ let surpriseTimeLeft = 0;
 let searchState = { query: '', filter: 'all' };
 let topicFilter = 'all';
 let fipiDraft = null;
+let essayWorkspaceTab = 'works';
+let essayWorksQuery = '';
+let essayWorksDirection = 'all';
 let syncConfig = readSyncConfig();
 let syncDraft = { code: syncConfig.code || '', passphrase: '', server: syncConfig.server || defaultSyncUrl() };
 let syncBusy = false;
@@ -163,6 +166,43 @@ function shuffle(items) {
     [copy[i], copy[j]] = [copy[j], copy[i]];
   }
   return copy;
+}
+
+function startEssayCheck(scope) {
+  const topicId = scope === 'cliches' ? 'e-cliches' : 'e-works';
+  const topic = TOPIC_BY_ID[topicId];
+  const pool = topic ? topic.questions.map(question => question.id).filter(id => QUESTION_BY_ID[id]) : [];
+  if (!pool.length) {
+    showToast('Нет вопросов для проверки', 'Попробуйте открыть тему и пройти практику.', 'info');
+    return;
+  }
+  const limit = topicId === 'e-cliches' ? 8 : 10;
+  startTrainer({ topicId, mode: 'topic', questionIds: shuffle(pool).slice(0, Math.min(limit, pool.length)) });
+}
+
+function copyEssayText(text) {
+  const value = String(text || '').trim();
+  if (!value) return;
+  const done = () => showToast('Фраза скопирована', 'Вставьте её в сочинение и продолжите своей мыслью.', 'success');
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(value).then(done).catch(() => {
+      showToast('Не удалось скопировать', value, 'info');
+    });
+    return;
+  }
+  const area = document.createElement('textarea');
+  area.value = value;
+  area.style.position = 'fixed';
+  area.style.opacity = '0';
+  document.body.appendChild(area);
+  area.select();
+  try {
+    document.execCommand('copy');
+    done();
+  } catch (error) {
+    showToast('Не удалось скопировать', value, 'info');
+  }
+  area.remove();
 }
 
 function shuffledOptionOrder(question) {
@@ -580,6 +620,35 @@ function handleClick(event) {
     case 'topic-filter':
       topicFilter = actionEl.dataset.filter || 'all';
       render();
+      break;
+    case 'essay-tab':
+      essayWorkspaceTab = actionEl.dataset.tab === 'cliches' ? 'cliches' : 'works';
+      render();
+      requestAnimationFrame(() => document.querySelector('.essay-workspace')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+      break;
+    case 'essay-direction':
+      essayWorksDirection = actionEl.dataset.direction || 'all';
+      render();
+      break;
+    case 'essay-search-clear': {
+      essayWorksQuery = '';
+      if ((actionEl.dataset.scope || 'all') === 'all') essayWorksDirection = 'all';
+      const input = document.querySelector('[data-essay-search]');
+      if (input) input.value = '';
+      const clear = document.querySelector('.essay-search-clear');
+      if (clear) clear.hidden = true;
+      const results = document.querySelector('[data-essay-results]');
+      if (results) results.innerHTML = renderEssayWorksResults();
+      break;
+    }
+    case 'open-essay-work':
+      if (actionEl.dataset.work) openModal('essay-work', { workId: actionEl.dataset.work });
+      break;
+    case 'start-essay-check':
+      startEssayCheck(actionEl.dataset.scope);
+      break;
+    case 'copy-essay-text':
+      copyEssayText(actionEl.dataset.text || '');
       break;
     case 'review-due': {
       const due = dueReviewTopics(10);
@@ -1349,6 +1418,14 @@ function handleInput(event) {
   if (target.matches('[data-search-input]')) {
     searchState.query = target.value;
     updateSearchResults();
+    return;
+  }
+  if (target.matches('[data-essay-search]')) {
+    essayWorksQuery = target.value;
+    const clear = document.querySelector('.essay-search-clear');
+    if (clear) clear.hidden = !essayWorksQuery;
+    const results = document.querySelector('[data-essay-results]');
+    if (results) results.innerHTML = renderEssayWorksResults();
     return;
   }
   if (target.matches('[data-sync-field]')) {

@@ -355,6 +355,14 @@ if (typeof FIPI_TOPICS !== 'undefined') {
   });
 }
 
+if (typeof ESSAY_TOPICS !== 'undefined') {
+  ESSAY_TOPICS.forEach(topic => {
+    if (!TOPICS.some(item => item.id === topic.id)) {
+      TOPICS.push({ ...topic, questions: [...(topic.questions || [])] });
+    }
+  });
+}
+
 TOPICS.forEach(topic => {
   if (EXTRA_PRACTICE[topic.id]) topic.questions.push(...EXTRA_PRACTICE[topic.id]);
   if (EXTRA_PRACTICE_PLUS[topic.id]) topic.questions.push(...EXTRA_PRACTICE_PLUS[topic.id]);

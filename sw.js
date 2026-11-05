@@ -1,5 +1,5 @@
 /* Фокус ЕГЭ — service worker для офлайн-режима и установки как приложения. */
-const CACHE_NAME = 'fokus-ege-v8';
+const CACHE_NAME = 'fokus-ege-v9';
 const SHELL = [
   './',
   './index.html',
@@ -7,6 +7,7 @@ const SHELL = [
   './css/styles.css',
   './js/data.js',
   './js/fipi-data.js',
+  './js/essay-data.js',
   './js/practice.js',
   './js/visuals-data.js',
   './js/constants.js',
@@ -17,6 +18,7 @@ const SHELL = [
   './js/model.js',
   './js/ui.js',
   './js/views.js',
+  './js/essay-views.js',
   './js/onboarding.js',
   './js/auth.js',
   './js/app.js',

@@ -424,6 +424,7 @@ function renderSubjectDetail(subjectId) {
         '</div>' +
       '</div>' +
     '</section>' +
+    (isEssay ? '<div style="margin-top:16px">' + renderEssayWorkspace() + '</div>' : '') +
     '<div style="margin-top:16px">' + renderStrategicMinimumCard(subjectId) + '</div>' +
     '<div style="margin-top:16px">' + renderPseCard(subjectId) + '</div>' +
     '<div style="margin-top:16px">' + renderDependencyCard(subjectId) + '</div>' +
@@ -1718,6 +1719,7 @@ function renderModalRoot() {
   if (!modal) return '';
   let content = '';
   if (modal.type === 'theory') content = renderTheoryModal(modal.topicId);
+  else if (modal.type === 'essay-work') content = renderEssayWorkModal(modal.workId);
   else if (modal.type === 'visual') content = renderVisualModal();
   else if (modal.type === 'search') content = renderSearchModal();
   else if (modal.type === 'fipi-journal') content = renderFipiJournalModal();
